@@ -15,9 +15,12 @@ script.setAttribute('src', chrome.runtime.getURL('pageScripts/main.js'))
 document.documentElement.appendChild(script)
 
 script.addEventListener('load', () => {
-  chrome.storage.local.get(['ajaxInterceptor_switchOn', 'ajaxInterceptor_rules'], (result) => {
+  chrome.storage.local.get(['ajaxInterceptor_switchOn', 'ajaxInterceptor_rules', 'ajaxInterceptor_groups'], (result) => {
     if (result.hasOwnProperty('ajaxInterceptor_switchOn')) {
       postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_switchOn', value: result.ajaxInterceptor_switchOn})
+    }
+    if (result.ajaxInterceptor_groups) {
+      postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_groups', value: result.ajaxInterceptor_groups})
     }
     if (result.ajaxInterceptor_rules) {
       postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_rules', value: result.ajaxInterceptor_rules})
@@ -64,6 +67,18 @@ function insertIframe() {
     iframe.frameBorder = "none"
     iframe.src = chrome.runtime.getURL("iframe/index.html")
     document.body.appendChild(iframe)
+    const postPageContext = () => {
+      try {
+        if (!iframe || !iframe.contentWindow) return
+        const extOrigin = new URL(chrome.runtime.getURL('')).origin
+        iframe.contentWindow.postMessage(
+          { type: 'ajaxInterceptorPageContext', origin: location.origin, href: location.href },
+          extOrigin
+        )
+      } catch (e) {}
+    }
+    iframe.addEventListener('load', postPageContext)
+    window.addEventListener('popstate', postPageContext)
     let show = false
     chrome.runtime.onMessage.addListener((msg, sender) => {
       if (msg == 'toggle') {

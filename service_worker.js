@@ -43,8 +43,43 @@ function handleContentSend(tabId, params = null) {
   }
 }
 
+// 供面板获取当前被调试页/当前窗口活动 Tab 的 URL（与 pageScripts 里 getCompleteUrl 的参照 page 一致）
+function respondPageContext(tabId, sendResponse) {
+  if (tabId != null && tabId !== '') {
+    chrome.tabs.get(tabId, (tab) => {
+      if (chrome.runtime.lastError || !tab || !tab.url) {
+        sendResponse(null)
+        return
+      }
+      try {
+        const u = new URL(tab.url)
+        sendResponse({ origin: u.origin, href: tab.url })
+      } catch (e) {
+        sendResponse(null)
+      }
+    })
+    return
+  }
+  chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+    if (chrome.runtime.lastError || !tabs || !tabs[0] || !tabs[0].url) {
+      sendResponse(null)
+      return
+    }
+    try {
+      const u = new URL(tabs[0].url)
+      sendResponse({ origin: u.origin, href: tabs[0].url })
+    } catch (e) {
+      sendResponse(null)
+    }
+  })
+}
+
 // 接收iframe传来的信息，转发给content.js
-chrome.runtime.onMessage.addListener(msg => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.to === 'background' && msg.type === 'getPageContext') {
+    respondPageContext(msg.tabId, sendResponse)
+    return true
+  }
   if (msg.type === 'ajaxInterceptor' && msg.to === 'background') {
     if (msg.hasOwnProperty('contentScriptLoaded')) {
       msg.contentScriptLoaded && chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
@@ -86,7 +121,7 @@ chrome.runtime.onMessage.addListener(msg => {
       } else if (msg.hasOwnProperty('iframeScriptLoaded')) {
         // 收到的传送信息是iframeScriptLoaded，说明是suspend刷新状态，提示需要在页面上刷新（只有在suspend时才会有此类情况）
         console.warn("[Ajax Modifier] To make the Ajax Modifier work, please do not refresh on devtools.")
-      } else if (msg.key === "ajaxInterceptor_rules" || msg.key === 'ajaxInterceptor_switchOn') {
+      } else if (msg.key === "ajaxInterceptor_rules" || msg.key === 'ajaxInterceptor_switchOn' || msg.key === 'ajaxInterceptor_groups') {
         // 收到的传送信息是修改rules且拿不到tab，说明内容也更新不到page script上，提示需要刷新（只有在分离的devtools时才会有此类情况）
         chrome.runtime.sendMessage(chrome.runtime.id, {type: 'ajaxInterceptor', to: 'iframe', showFreshTip: true})
       }

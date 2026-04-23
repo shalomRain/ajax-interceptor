@@ -3,7 +3,18 @@ let ajax_interceptor_qoweifjqon = {
   settings: {
     ajaxInterceptor_switchOn: false,
     ajaxInterceptor_always200On: true, // 默认开启，后期可以扩展成设置项
+    ajaxInterceptor_groups: [],
     ajaxInterceptor_rules: [],
+  },
+  isRuleGroupOn: (item) => {
+    const groupId = item && item.groupId
+    const groups = ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_groups || []
+    if (!groupId) {
+      return !groups.length || (groups[0] && groups[0].switchOn)
+    }
+    const g = groups.find(x => x && x.id === groupId)
+    if (!g) return true
+    return g.switchOn !== false
   },
   // 获取匹配到的规则项
   getMatchedInterface: ({
@@ -17,7 +28,9 @@ let ajax_interceptor_qoweifjqon = {
       const matchedMethod = thisMethod === limitMethod || limitMethod === 'ALL'
       const matchedRequest = (filterType === 'normal' && thisRequestUrl.indexOf(match) > -1) ||
         (filterType === 'regex' && thisRequestUrl.match(new RegExp(match, 'i')))
-      return switchOn && matchedMethod && matchedRequest
+      return (
+        switchOn && matchedMethod && matchedRequest && ajax_interceptor_qoweifjqon.isRuleGroupOn(item)
+      )
     })
   },
   // 执行用户输入的函数，如果有错误会抛出到控制台
@@ -482,8 +495,8 @@ window.addEventListener("message", function (event) {
   if (ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_switchOn) {
     // https://github.com/YGYOOO/ajax-interceptor/issues/78
     // https://github.com/YGYOOO/ajax-interceptor/issues/93
-    for (const k in ajax_tools_space.originalXHR) {
-      ajax_tools_space.myXHR[k] = ajax_tools_space.originalXHR[k]
+    for (const k in ajax_interceptor_qoweifjqon.originalXHR) {
+      ajax_interceptor_qoweifjqon.myXHR[k] = ajax_interceptor_qoweifjqon.originalXHR[k]
     }
     window.XMLHttpRequest = ajax_interceptor_qoweifjqon.myXHR
     window.fetch = ajax_interceptor_qoweifjqon.myFetch
