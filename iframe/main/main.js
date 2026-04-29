@@ -197,7 +197,7 @@ export default class Main extends Component {
     const n = window.setting.ajaxInterceptor_groups.length + 1
     window.setting.ajaxInterceptor_groups.push({
       id: buildUUID(),
-      name: `组${n}`,
+      name: '',
       switchOn: true
     })
     this.set('ajaxInterceptor_groups', window.setting.ajaxInterceptor_groups)
@@ -232,7 +232,7 @@ export default class Main extends Component {
     window.setting.ajaxInterceptor_rules.push({
       groupId: gid,
       match: '',
-      label: `url${window.setting.ajaxInterceptor_rules.length + 1}`,
+      label: '',
       switchOn: true,
       key: buildUUID()
     })
@@ -404,8 +404,14 @@ export default class Main extends Component {
         <div className={window.setting.ajaxInterceptor_switchOn ? 'setting-body' : 'setting-body setting-body-hidden'}>
           {window.setting.ajaxInterceptor_groups && window.setting.ajaxInterceptor_groups.length > 0 ? (
             <div>
-              {window.setting.ajaxInterceptor_groups.map((group) => (
-                <div key={group.id} className="rule-group">
+              {window.setting.ajaxInterceptor_groups.map((group) => {
+                const groupDisabled = group.switchOn === false
+                return (
+                <div
+                  key={group.id}
+                  className={groupDisabled ? 'rule-group rule-group--disabled' : 'rule-group'}
+                  title={groupDisabled ? '组开关已关闭：组内规则暂不拦截，可重新打开组开关恢复' : undefined}
+                >
                   <div className="group-toolbar" onClick={e => e.stopPropagation()}>
                     <Input
                       placeholder="组名（如：项目A / 版本2）"
@@ -421,10 +427,14 @@ export default class Main extends Component {
                       onChange={val => this.handleGroupSwitchChange(val, group.id)}
                       className="group-toolbar-switch"
                     />
+                    {groupDisabled ? (
+                      <span className="group-disabled-badge">已关闭 · 本组规则暂不生效</span>
+                    ) : null}
                     <Button
                       type="dashed"
                       size="small"
                       onClick={() => this.handleClickAddInGroup(group.id)}
+                      disabled={groupDisabled}
                     >
                       + 规则
                     </Button>
@@ -467,11 +477,15 @@ export default class Main extends Component {
                                     placeholder="name"
                                     style={{ width: '1px', maxWidth: '120px', flex: 'auto', display: 'inline-block' }}
                                     defaultValue={label}
-                                    onChange={e => this.handleLabelChange(e, i)}/>
+                                    onChange={e => this.handleLabelChange(e, i)}
+                                    disabled={groupDisabled}
+                                  />
                                   <Select
                                     defaultValue={limitMethod}
                                     style={{ width: '1px', maxWidth: '120px', flex: '1.5 1 auto', display: 'inline-block' }}
-                                    onChange={e => this.handleLimitMethodChange(e, i)}>
+                                    onChange={e => this.handleLimitMethodChange(e, i)}
+                                    disabled={groupDisabled}
+                                  >
                                     <Option value="ALL">ALL</Option>
                                     <Option value="GET">GET</Option>
                                     <Option value="POST">POST</Option>
@@ -483,7 +497,9 @@ export default class Main extends Component {
                                   <Select
                                     defaultValue={filterType}
                                     style={{ width: '1px', maxWidth: '120px', flex: '1.5 1 auto', display: 'inline-block' }}
-                                    onChange={e => this.handleFilterTypeChange(e, i)}>
+                                    onChange={e => this.handleFilterTypeChange(e, i)}
+                                    disabled={groupDisabled}
+                                  >
                                     <Option value="normal">normal</Option>
                                     <Option value="regex">regex</Option>
                                   </Select>
@@ -492,6 +508,7 @@ export default class Main extends Component {
                                     style={{ width: '1px', flex: '1.5 1 auto', display: 'inline-block' }}
                                     defaultValue={match}
                                     onChange={e => this.handleMatchChange(e, i)}
+                                    disabled={groupDisabled}
                                   />
                                 </Input.Group>
                                 <div className="button-group">
@@ -500,6 +517,7 @@ export default class Main extends Component {
                                     defaultChecked={switchOn}
                                     onChange={val => this.handleSingleSwitchChange(val, i)}
                                     style={{ width: '28px', flex: 'none', marginRight: '8px' }}
+                                    disabled={groupDisabled}
                                   />
                                   <Button
                                     type="primary"
@@ -509,6 +527,7 @@ export default class Main extends Component {
                                     title="复制本规则（同组内新增一条，可只改 url 与响应体）"
                                     onClick={e => this.handleClickDuplicateRule(e, i)}
                                     style={{ width: '24px', flex: 'none', marginRight: 4 }}
+                                    disabled={groupDisabled}
                                   />
                                   <Button
                                     type="primary"
@@ -517,6 +536,7 @@ export default class Main extends Component {
                                     size="small"
                                     onClick={e => this.handleClickRemove(e, i)}
                                     style={{ width: '24px', flex: 'none' }}
+                                    disabled={groupDisabled}
                                   />
                                 </div>
                               </div>
@@ -541,6 +561,7 @@ export default class Main extends Component {
                             updateAddBtnTop_interval={this.updateAddBtnTop_interval}
                             index={i}
                             set={this.set}
+                            disabled={groupDisabled}
                           />
                           {this.state.interceptedRequests[match] && (
                             <>
@@ -573,7 +594,8 @@ export default class Main extends Component {
                       ))}
                   </Collapse>
                 </div>
-              ))}
+                )
+              })}
             </div>
           ) : <div/>}
         </div>

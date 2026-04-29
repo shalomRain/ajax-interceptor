@@ -28,7 +28,7 @@ function ensureGroupsMigrated (raw) {
     const defaultId = buildGroupId()
     const withIds = rules.map((r) => ({ ...r, groupId: r.groupId || defaultId }))
     return {
-      out: { ...raw, ajaxInterceptor_groups: [{ id: defaultId, name: '默认', switchOn: true }], ajaxInterceptor_rules: withIds },
+      out: { ...raw, ajaxInterceptor_groups: [{ id: defaultId, name: '', switchOn: true }], ajaxInterceptor_rules: withIds },
       needsSave: true
     }
   }

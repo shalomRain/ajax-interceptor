@@ -10,7 +10,8 @@ const MonacoEditor = (props, ref) => {
   }))
   const {
     languageSelectOptions = ['json', 'javascript'],
-    examples = [{ egTitle: '', egText: '// Type here' }]
+    examples = [{ egTitle: '', egText: '// Type here' }],
+    readOnly = false
   } = props
   const [editor, setEditor] = useState(null)
   const [language, setLanguage] = useState(props.language || 'javascript')
@@ -25,6 +26,7 @@ const MonacoEditor = (props, ref) => {
         theme: 'vs-dark',
         scrollBeyondLastLine: false,
         tabSize: 2,
+        readOnly: !!readOnly,
         minimap: {
           enabled: false
         }
@@ -42,6 +44,12 @@ const MonacoEditor = (props, ref) => {
       resizeObserver.unobserve(containerRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (editor) {
+      editor.updateOptions({ readOnly: !!readOnly })
+    }
+  }, [editor, readOnly])
   // 导入props的值，并格式化
   useEffect(() => {
     if (editor) {
@@ -106,6 +114,7 @@ const MonacoEditor = (props, ref) => {
     setDropVisible(newVal)
   }
 
+  const isRo = !!readOnly
   return <div className="monaco-editor-container" id="monaco-editor-container" ref={containerRef}>
     <div className="monaco-editor-header">
       <Select
@@ -113,12 +122,18 @@ const MonacoEditor = (props, ref) => {
         value={language}
         onChange={onLanguageChange}
         className="language-select"
+        disabled={isRo}
       >
         {
           languageSelectOptions.map((lang) => <Select.Option key={lang} value={lang}>{lang}</Select.Option>)
         }
       </Select>
-      <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        pointerEvents: isRo ? 'none' : undefined,
+        opacity: isRo ? 0.55 : 1
+      }}>
         {
           examples.length > 1 ? <Dropdown overlay={menu} visible={dropVisible} trigger={['click', 'hover']}
                                           onVisibleChange={handleVisibleChange}>

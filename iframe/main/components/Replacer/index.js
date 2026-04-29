@@ -69,10 +69,12 @@ export default class Index extends Component {
   }
 
   render() {
+    const ro = !!this.props.disabled
     return (
       <>
         <Switch onChange={this.handleExpertSwitch} size="small" checked={this.state.isExpert}
-                checkedChildren=" Advanced Mode" unCheckedChildren="Advanced Mode " />
+                checkedChildren=" Advanced Mode" unCheckedChildren="Advanced Mode "
+                disabled={ro} />
         {
           !this.state.isExpert && (
             <div>
@@ -86,6 +88,7 @@ export default class Index extends Component {
                 examples={RESPONSE_SIMPLE_EXAMPLES}
                 onEditorChange={this.handleOverrideTxtChange}
                 languageSelectOptions={["json", "text"]}
+                readOnly={ro}
               />
             </div>
           )
@@ -93,7 +96,8 @@ export default class Index extends Component {
         {
           this.state.isExpert && (
             <div>
-              <Radio.Group value={this.state.editorValue} onChange={this.handleEditorRatioChange} className="replace-radio">
+              <Radio.Group value={this.state.editorValue} onChange={this.handleEditorRatioChange} className="replace-radio"
+                disabled={ro}>
                 <Radio.Button value={1}>Payload</Radio.Button>
                 <Radio.Button value={2}>Headers</Radio.Button>
                 <Radio.Button value={3}>Response</Radio.Button>
@@ -107,6 +111,7 @@ export default class Index extends Component {
                     examples={REQUEST_PAYLOAD_EXAMPLES}
                     onEditorChange={this.onPayloadEditorChange}
                     languageSelectOptions={["javascript"]}
+                    readOnly={ro}
                   />
                 )
               }
@@ -120,6 +125,7 @@ export default class Index extends Component {
                       examples={HEADERS_EXAMPLES}
                       onEditorChange={this.onHeadersEditorChange}
                       languageSelectOptions={["javascript"]}
+                      readOnly={ro}
                     />
                   </div>
                 )
@@ -134,6 +140,7 @@ export default class Index extends Component {
                       examples={RESPONSE_EXAMPLES}
                       onEditorChange={this.onResponseEditorChange}
                       languageSelectOptions={["javascript"]} // 如果之后支持多语言切换，还要存储当前语言
+                      readOnly={ro}
                     />
                   </div>
                 )
