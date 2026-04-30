@@ -76,6 +76,37 @@ function respondPageContext(tabId, sendResponse) {
 
 // 接收iframe传来的信息，转发给content.js
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // ts-mock 预览：iframe(扩展页) -> background -> content -> pageScript(页面环境) -> 回传 iframe
+  if (msg && msg.type === 'ajaxInterceptor' && msg.to === 'background' && msg.action === 'mockPreview') {
+    const { requestId, templateText } = msg
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs || !tabs.length) {
+        chrome.runtime.sendMessage(chrome.runtime.id, {
+          type: 'ajaxInterceptor',
+          to: 'iframe',
+          action: 'mockPreviewResult',
+          requestId,
+          ok: false,
+          error: '未找到当前活动标签页'
+        })
+        return
+      }
+      handleContentSend(tabs[0].id, {
+        type: 'ajaxInterceptor',
+        to: 'content',
+        action: 'mockPreview',
+        requestId,
+        templateText
+      })
+    })
+    return
+  }
+
+  if (msg && msg.type === 'ajaxInterceptor' && msg.to === 'background' && msg.action === 'mockPreviewResult') {
+    chrome.runtime.sendMessage(chrome.runtime.id, { ...msg, to: 'iframe' })
+    return
+  }
+
   if (msg && msg.to === 'background' && msg.type === 'getPageContext') {
     respondPageContext(msg.tabId, sendResponse)
     return true

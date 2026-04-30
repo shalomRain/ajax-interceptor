@@ -20,6 +20,7 @@
     {
       "resources": [
         "pageScripts/defaultSettings.js",
+        "pageScripts/mockjs.js",
         "pageScripts/main.js",
         "iframe/index.html"
       ],

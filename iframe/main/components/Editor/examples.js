@@ -178,3 +178,65 @@ export const RESPONSE_SIMPLE_EXAMPLES = [
 `
   }
 ]
+
+/** Mock.js：合法 JSON + Mock.js 占位符与语法，每次拦截生成新随机数据 */
+export const RESPONSE_MOCKJS_EXAMPLES = [
+  {
+    egTitle: 'e.g. Mock 字段',
+    egLanguage: 'json',
+    egText: `{
+  "code": 0,
+  "id": "@guid",
+  "name": "@cname",
+  "city": "@city",
+  "email": "@email",
+  "url": "@url"
+}
+`
+  },
+  {
+    egTitle: 'e.g. 列表与次数',
+    egLanguage: 'json',
+    egText: `{
+  "list|3-5": [
+    {
+      "id|+1": 1,
+      "title": "@ctitle",
+      "score|60-100": 80
+    }
+  ]
+}
+`
+  }
+]
+
+/** ts-mock：粘贴 TypeScript interface，由扩展解析为 Mock 模板（根类型优先 interface Root） */
+export const RESPONSE_TS_MOCK_EXAMPLES = [
+  {
+    egTitle: 'e.g. Root + Result',
+    egLanguage: 'typescript',
+    egText: `export interface Root {
+  message?: string
+  status?: boolean
+  statusCode?: string
+  result?: Result
+}
+
+export interface Result {
+  billCode?: string
+  associationCode?: string
+  hasWarmTag?: boolean
+  picCounts?: number
+  allTracings?: AllTracing[]
+}
+
+export interface AllTracing {
+  scanType?: string
+  scanMan?: string
+  scanDate?: string
+  registerDate?: string
+  billCode?: string
+}
+`
+  }
+]

@@ -74,7 +74,7 @@ module.exports = {
   },
   plugins: [
     new MonacoWebpackPlugin({
-      languages: ["json", "javascript"],
+      languages: ["json", "javascript", "typescript"],
     }),
     // new BundleAnalyzerPlugin()
   ]

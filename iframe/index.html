@@ -1,15 +1,35 @@
 <!DOCTYPE html>
-<html>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <head>
-  </head>
-  <body>
-    <style>
-      #main {
-        height: 100%
-      }
-    </style>
-    <div id="main"></div>
-    <script type="module" src="dist/bundle.js"></script>
-  </body>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <!-- 与 Main.less 中 .ajax-modifier-main 的 max-width:800px 一致；勿用 device-width，弹窗内会过窄 -->
+  <meta name="viewport" content="width=800, initial-scale=1">
+  <title>Ajax Modifier</title>
+  <style>
+    /**
+     * 扩展 action 弹窗：必须为 html/body 给出明确尺寸，否则子元素 height:100% 无法计算，
+     * Chrome 会把弹窗压成一条细缝（约几十像素高）。
+     * 宽度与本地 webpack 调试时主面板一致（800px）。
+     */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 800px;
+      min-width: 800px;
+      height: 580px;
+      max-height: 600px;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+    #main {
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <div id="main"></div>
+  <script type="module" src="dist/bundle.js"></script>
+</body>
 </html>
