@@ -37,7 +37,6 @@ mockScript.addEventListener('load', () => {
 
 
 let iframe
-let iframeLoaded = false
 let isDevtoolPosition = false
 chrome.storage.local.get(['customFunction'], (result) => {
   isDevtoolPosition = !!result.customFunction?.panelPosition
@@ -74,18 +73,6 @@ function insertIframe() {
     iframe.frameBorder = "none"
     iframe.src = chrome.runtime.getURL("iframe/index.html")
     document.body.appendChild(iframe)
-    const postPageContext = () => {
-      try {
-        if (!iframe || !iframe.contentWindow) return
-        const extOrigin = new URL(chrome.runtime.getURL('')).origin
-        iframe.contentWindow.postMessage(
-          { type: 'ajaxInterceptorPageContext', origin: location.origin, href: location.href },
-          extOrigin
-        )
-      } catch (e) {}
-    }
-    iframe.addEventListener('load', postPageContext)
-    window.addEventListener('popstate', postPageContext)
     let show = false
     chrome.runtime.onMessage.addListener((msg, sender) => {
       if (msg == 'toggle') {
@@ -101,32 +88,11 @@ function insertIframe() {
 // 接收background.js传来的信息，转发给pageScript
 chrome.runtime.onMessage.addListener(msg => {
   if (msg.type === 'ajaxInterceptor' && msg.to === 'content') {
-    if (msg.hasOwnProperty('iframeScriptLoaded')) {
-      if (msg.iframeScriptLoaded) iframeLoaded = true
-    } else {
-      // 转发给 pageScript 执行（包括配置同步与 mockPreview）
+    if (!msg.hasOwnProperty('iframeScriptLoaded')) {
       postMessage({ ...msg, to: 'pageScript' })
     }
   }
 })
-
-// 接收pageScript传来的信息，转发给iframe
-window.addEventListener("pageScript", function(event) {
-  if (iframeLoaded || isDevtoolPosition) {
-    chrome.runtime.sendMessage({type: 'ajaxInterceptor', to: 'iframe', ...event.detail})
-  } else {
-    let count = 0
-    const checktLoadedInterval = setInterval(() => {
-      if (iframeLoaded) {
-        clearInterval(checktLoadedInterval)
-        chrome.runtime.sendMessage({type: 'ajaxInterceptor', to: 'iframe', ...event.detail})
-      }
-      if (count ++ > 500) {
-        clearInterval(checktLoadedInterval)
-      }
-    }, 10)
-  }
-}, false)
 
 // 接收 pageScript 回传的预览结果，转发给 background，再由 background 转发给 iframe(扩展页)
 window.addEventListener('message', function (event) {

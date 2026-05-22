@@ -16,6 +16,54 @@ let ajax_interceptor_qoweifjqon = {
     if (!g) return true
     return g.switchOn !== false
   },
+  getGroupById: (groupId) => {
+    const groups = ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_groups || []
+    if (!groupId) return groups[0] || null
+    return groups.find(x => x && x.id === groupId) || null
+  },
+  normalizeGroupDomain: (domain) => {
+    if (!domain || typeof domain !== 'string') return ''
+    let d = domain.trim()
+    if (!d) return ''
+    try {
+      if (/^https?:\/\//i.test(d)) {
+        return new URL(d).host.toLowerCase()
+      }
+    } catch (e) {}
+    return d.split('/')[0].split('?')[0].toLowerCase()
+  },
+  joinDomainAndPath: (domain, path) => {
+    const host = ajax_interceptor_qoweifjqon.normalizeGroupDomain(domain)
+    const p = (path || '').trim()
+    if (!host) return p
+    if (!p) return host
+    const pathPart = p.startsWith('/') ? p : '/' + p
+    return host + pathPart
+  },
+  /** 组未填域名时不限制；填写后请求 host 须与域名一致 */
+  isGroupDomainMatch: (requestUrl, groupId) => {
+    const group = ajax_interceptor_qoweifjqon.getGroupById(groupId)
+    const domain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(group && group.domain)
+    if (!domain) return true
+    try {
+      const host = new URL(requestUrl, window.location.href).host.toLowerCase()
+      return host === domain
+    } catch (e) {
+      return false
+    }
+  },
+  /** 组有域名时仅在 pathname+search 上匹配路径；无域名时在完整 URL 上匹配（兼容旧行为） */
+  getRuleMatchTarget: (requestUrl, groupId) => {
+    const group = ajax_interceptor_qoweifjqon.getGroupById(groupId)
+    const domain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(group && group.domain)
+    if (!domain) return requestUrl
+    try {
+      const u = new URL(requestUrl, window.location.href)
+      return u.pathname + u.search
+    } catch (e) {
+      return requestUrl
+    }
+  },
   // 获取匹配到的规则项
   getMatchedInterface: ({
     thisRequestUrl = '',
@@ -25,12 +73,31 @@ let ajax_interceptor_qoweifjqon = {
       const {
         filterType = 'normal', limitMethod = 'ALL', switchOn = true, match
       } = item
+      if (!match || !switchOn || !ajax_interceptor_qoweifjqon.isRuleGroupOn(item)) {
+        return false
+      }
+      if (!ajax_interceptor_qoweifjqon.isGroupDomainMatch(thisRequestUrl, item.groupId)) {
+        return false
+      }
       const matchedMethod = thisMethod === limitMethod || limitMethod === 'ALL'
-      const matchedRequest = (filterType === 'normal' && thisRequestUrl.indexOf(match) > -1) ||
-        (filterType === 'regex' && thisRequestUrl.match(new RegExp(match, 'i')))
-      return (
-        switchOn && matchedMethod && matchedRequest && ajax_interceptor_qoweifjqon.isRuleGroupOn(item)
-      )
+      const group = ajax_interceptor_qoweifjqon.getGroupById(item.groupId)
+      const groupDomain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(group && group.domain)
+      const matchTarget = ajax_interceptor_qoweifjqon.getRuleMatchTarget(thisRequestUrl, item.groupId)
+      let matchedRequest = false
+      if (filterType === 'normal') {
+        if (groupDomain) {
+          const combined = ajax_interceptor_qoweifjqon.joinDomainAndPath(group && group.domain, match)
+          const pathNorm = match.startsWith('/') ? match : '/' + match
+          matchedRequest = thisRequestUrl.indexOf(combined) > -1 ||
+            matchTarget.indexOf(match) > -1 ||
+            matchTarget.indexOf(pathNorm) > -1
+        } else {
+          matchedRequest = matchTarget.indexOf(match) > -1
+        }
+      } else if (filterType === 'regex') {
+        matchedRequest = !!matchTarget.match(new RegExp(match, 'i'))
+      }
+      return matchedMethod && matchedRequest
     })
   },
   // 执行用户输入的函数，如果有错误会抛出到控制台
@@ -134,7 +201,6 @@ let ajax_interceptor_qoweifjqon = {
   },
   originalXHR: window.XMLHttpRequest,
   myXHR: function () {
-    let pageScriptEventDispatched = false
     const modifyResponse = () => {
       const [method, requestUrl] = this._openArgs
       const queryParams = ajax_interceptor_qoweifjqon.getRequestParams(requestUrl)
@@ -143,8 +209,7 @@ let ajax_interceptor_qoweifjqon = {
       if (matchedInterface && (matchedInterface.overrideTxt || matchedInterface.overrideResponseFunc)) {
         const {
           overrideTxt,
-          overrideResponseFunc,
-          match
+          overrideResponseFunc
         } = matchedInterface
         const isAdvanced = ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
         const isMockjs = ajax_interceptor_qoweifjqon.isMockjsTemplateRule(matchedInterface)
@@ -197,15 +262,6 @@ let ajax_interceptor_qoweifjqon = {
         this.response = overrideResponse !== undefined ? overrideResponse : this.response
         this.status = overrideStatus !== undefined ? overrideStatus : this.status
         this.statusText = overrideStatusText !== undefined ? overrideStatusText : this.statusText
-        if (!pageScriptEventDispatched) {
-          window.dispatchEvent(new CustomEvent("pageScript", {
-            detail: {
-              url: this.responseURL,
-              match
-            }
-          }))
-          pageScriptEventDispatched = true
-        }
       }
     }
 
@@ -444,12 +500,6 @@ let ajax_interceptor_qoweifjqon = {
     }
     return ajax_interceptor_qoweifjqon.originalFetch(...args).then(async (response) => {
       if (matchedInterface && (matchedInterface.overrideTxt || matchedInterface.overrideResponseFunc)) {
-        window.dispatchEvent(new CustomEvent("pageScript", {
-          detail: {
-            url: response.url,
-            match: matchedInterface.match
-          }
-        }))
         let txt = undefined
         txt = matchedInterface.overrideTxt
         const {

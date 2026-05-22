@@ -49,25 +49,6 @@
   transform: translateY(-100px);
   opacity: 0;
 }
-.intercepted-requests {
-  margin-bottom: 6px;
-  margin-top: 7px;
-  text-align: left;
-  font-weight: 500;
-}
-.intercepted {
-  text-align: left;
-}
-.intercepted > span {
-  width: 100%;
-  display: inline-block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.url {
-  vertical-align: top;
-}
 .panel-header {
   display: flex;
   align-items: center;
@@ -115,9 +96,13 @@
   gap: 4px 6px;
 }
 .group-name-input {
-  max-width: 200px;
+  max-width: 160px;
   min-width: 0;
-  flex: 1 1 120px;
+}
+.group-domain-input {
+  max-width: 220px;
+  min-width: 120px;
+  flex: 1 1 140px;
 }
 .group-toolbar-label {
   font-size: 12px;
@@ -171,14 +156,6 @@
 }
 .match-url-preview--in-header .match-url-preview-body {
   margin-top: 0;
-}
-.match-url-preview-label {
-  color: #8c8c8c;
-}
-.match-url-preview-href {
-  color: #1890ff;
-  font-weight: 500;
-  word-break: break-all;
 }
 .match-url-preview-body {
   margin-top: 4px;
