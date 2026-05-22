@@ -6,6 +6,13 @@ import MatchUrlPreview from './MatchUrlPreview'
 const { Option } = Select
 const Panel = Collapse.Panel
 
+/** 关闭 antd Collapse 展开/收起高度动画，避免增删规则时列表抖动 */
+const collapseOpenAnimation = {
+  appear (node, done) { done() },
+  enter (node, done) { done() },
+  leave (node, done) { done() }
+}
+
 export default function MainGroups ({
   switchOn,
   groups,
@@ -36,6 +43,9 @@ export default function MainGroups ({
     <div>
       {groups.map((group) => {
         const groupDisabled = group.switchOn === false
+        const groupRules = rules
+          .map((r, i) => ({ r, i }))
+          .filter(({ r }) => r.groupId === group.id)
         return (
           <div
             key={group.id}
@@ -85,13 +95,11 @@ export default function MainGroups ({
               </Button>
             </div>
             <Collapse
+              openAnimation={collapseOpenAnimation}
               className={switchOn ? 'collapse' : 'collapse collapse-hidden'}
               onChange={onCollapseChange}
             >
-              {rules
-                .map((r, i) => ({ r, i }))
-                .filter(({ r }) => r.groupId === group.id)
-                .map(({
+              {groupRules.map(({
                   r: {
                     filterType = 'normal',
                     limitMethod = 'ALL',
@@ -172,7 +180,7 @@ export default function MainGroups ({
                               shape="circle"
                               icon="minus"
                               size="small"
-                              onClick={e => onRemoveRule(e, i)}
+                              onClick={e => onRemoveRule(e, key)}
                               style={{ width: '24px', flex: 'none' }}
                               disabled={groupDisabled}
                             />

@@ -30,7 +30,11 @@ export function ensureGroupsMigrated (raw) {
   const groups = raw.ajaxInterceptor_groups
   if (!Array.isArray(groups) || !groups.length) {
     const defaultId = buildGroupId()
-    const withIds = rules.map((r) => ({ ...r, groupId: r.groupId || defaultId }))
+    const withIds = rules.map((r) => ({
+      ...r,
+      groupId: r.groupId || defaultId,
+      key: r.key || buildGroupId()
+    }))
     return {
       out: { ...raw, ajaxInterceptor_groups: [{ id: defaultId, name: '', domain: '', switchOn: true }], ajaxInterceptor_rules: withIds },
       needsSave: true
@@ -40,9 +44,16 @@ export function ensureGroupsMigrated (raw) {
   const fallback = groups[0] && groups[0].id
   let needsSave = false
   const withIds = rules.map((r) => {
-    if (r.groupId && idSet.has(r.groupId)) return r
-    needsSave = true
-    return { ...r, groupId: fallback }
+    let next = r
+    if (!r.groupId || !idSet.has(r.groupId)) {
+      needsSave = true
+      next = { ...next, groupId: fallback }
+    }
+    if (!next.key) {
+      needsSave = true
+      next = { ...next, key: buildGroupId() }
+    }
+    return next
   })
   return { out: { ...raw, ajaxInterceptor_groups: groups, ajaxInterceptor_rules: withIds }, needsSave }
 }

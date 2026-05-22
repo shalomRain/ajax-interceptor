@@ -42,7 +42,6 @@
   transform: translateY(calc(-100% - 20px));
 }
 .collapse {
-  transition: all .6s;
   margin-bottom: 10px;
 }
 .collapse-hidden {
@@ -165,43 +164,12 @@
 }
 
 
-.ant-collapse-item {
-  animation-duration: 0.5s;
-  backface-visibility: visible !important;
-  animation-name: flipInX;
+.rule-group .ant-collapse-item {
+  animation: none;
 }
-
-@keyframes flipInX {
-  from {
-    -webkit-transform: perspective(450px) rotate3d(1, 0, 0, 90deg);
-    transform: perspective(450px) rotate3d(1, 0, 0, 90deg);
-    -webkit-animation-timing-function: ease-in;
-    animation-timing-function: ease-in;
-    opacity: 0;
-  }
-
-  40% {
-    -webkit-transform: perspective(450px) rotate3d(1, 0, 0, -20deg);
-    transform: perspective(450px) rotate3d(1, 0, 0, -20deg);
-    -webkit-animation-timing-function: ease-in;
-    animation-timing-function: ease-in;
-  }
-
-  60% {
-    -webkit-transform: perspective(450px) rotate3d(1, 0, 0, 10deg);
-    transform: perspective(450px) rotate3d(1, 0, 0, 10deg);
-    opacity: 1;
-  }
-
-  80% {
-    -webkit-transform: perspective(450px) rotate3d(1, 0, 0, -5deg);
-    transform: perspective(450px) rotate3d(1, 0, 0, -5deg);
-  }
-
-  to {
-    -webkit-transform: perspective(450px);
-    transform: perspective(450px);
-  }
+.rule-group .ant-motion-collapse,
+.rule-group .ant-motion-collapse-active {
+  transition: none !important;
 }
 
 .radio-icon {

@@ -134,13 +134,30 @@ export const mainHandlerMethods = {
     this.forceUpdate()
   },
 
-  handleClickRemove (e, i) {
+  ensureRulesHaveKeys () {
+    const rules = window.setting.ajaxInterceptor_rules || []
+    let changed = false
+    const next = rules.map((r) => {
+      if (r.key) return r
+      changed = true
+      return { ...r, key: buildUUID() }
+    })
+    if (changed) {
+      window.setting.ajaxInterceptor_rules = next
+      this.set('ajaxInterceptor_rules', next)
+    }
+  },
+
+  handleClickRemove (e, ruleKey) {
     e.stopPropagation()
-    window.setting.ajaxInterceptor_rules = [
-      ...window.setting.ajaxInterceptor_rules.slice(0, i),
-      ...window.setting.ajaxInterceptor_rules.slice(i + 1),
-    ]
+    this.ensureRulesHaveKeys()
+    if (!ruleKey) return
+    window.setting.ajaxInterceptor_rules = window.setting.ajaxInterceptor_rules.filter(
+      (r) => r.key !== ruleKey
+    )
     this.set('ajaxInterceptor_rules', window.setting.ajaxInterceptor_rules)
+    notifyMatchUrlPreviewUpdate()
+    this.forceUpdate()
   },
 
   handleClickDuplicateRule (e, i) {
