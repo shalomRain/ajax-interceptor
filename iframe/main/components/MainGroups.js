@@ -13,6 +13,10 @@ function isGroupExpanded (group) {
   return group.expanded !== false
 }
 
+function isRuleExpanded (rule) {
+  return rule.expanded !== false
+}
+
 /** 关闭 antd Collapse 展开/收起高度动画，避免增删规则时列表抖动 */
 const collapseOpenAnimation = {
   appear (node, done) { done() },
@@ -193,7 +197,7 @@ export default function MainGroups ({
   onRemoveGroup,
   onGroupReorder,
   onGroupExpandedChange,
-  onCollapseChange,
+  onGroupRulesCollapseChange,
   onLabelChange,
   onLimitMethodChange,
   onFilterTypeChange,
@@ -267,6 +271,9 @@ export default function MainGroups ({
           .map((r, i) => ({ r, i }))
           .filter(({ r }) => r.groupId === group.id)
         const isExpanded = isGroupExpanded(group)
+        const ruleActiveKeys = groupRules
+          .filter(({ r }) => isRuleExpanded(r))
+          .map(({ r }) => r.key)
         const isDragSource = isDragging && dragFromIndex === index
         const showDropBefore = isDragging && dragOverIndex === index
 
@@ -322,7 +329,8 @@ export default function MainGroups ({
                 <Collapse
                   openAnimation={collapseOpenAnimation}
                   className="rules-inner-collapse"
-                  onChange={onCollapseChange}
+                  activeKey={ruleActiveKeys}
+                  onChange={(keys) => onGroupRulesCollapseChange(group.id, keys)}
                 >
                   {groupRules.map(({
                     r: {

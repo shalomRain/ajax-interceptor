@@ -3,8 +3,10 @@ import { Switch, Button, Icon } from 'antd'
 
 export default function MainToolbar ({
   switchOn,
+  expandAllActive,
   showRefreshTip,
   onSwitchChange,
+  onExpandCollapseAll,
   onAddGroup,
   onOpenSettings,
   onExportBackup,
@@ -13,8 +15,21 @@ export default function MainToolbar ({
   return (
     <div className="main-toolbar-inner">
       <div className="main-toolbar-left">
+        <span
+          className="toolbar-expand-label"
+          title={expandAllActive ? '收起所有组与规则' : '展开所有组与规则'}
+        >
+          全部展开
+        </span>
         <Switch
-          style={{ transform: 'translateX(11px)' }}
+          size="small"
+          checked={expandAllActive}
+          onChange={onExpandCollapseAll}
+          disabled={!switchOn}
+          title={expandAllActive ? '收起所有组与规则' : '展开所有组与规则'}
+        />
+        <Switch
+          style={{ marginLeft: 6 }}
           checked={switchOn}
           onChange={onSwitchChange}
         />
