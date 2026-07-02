@@ -101,6 +101,19 @@ export const mainHandlerMethods = {
     this.forceUpdate()
   },
 
+  handleGroupReorder (fromIndex, toIndex) {
+    if (fromIndex === toIndex) return
+    const groups = [...window.setting.ajaxInterceptor_groups]
+    if (fromIndex < 0 || fromIndex >= groups.length || toIndex < 0 || toIndex >= groups.length) {
+      return
+    }
+    const [moved] = groups.splice(fromIndex, 1)
+    groups.splice(toIndex, 0, moved)
+    window.setting.ajaxInterceptor_groups = groups
+    this.set('ajaxInterceptor_groups', groups)
+    this.forceUpdate()
+  },
+
   handleRemoveGroup (groupId) {
     if (window.setting.ajaxInterceptor_groups.length <= 1) {
       Modal.info({ title: '至少保留一个组' })
