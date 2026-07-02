@@ -41,9 +41,7 @@
 .setting-body-hidden {
   transform: translateY(calc(-100% - 20px));
 }
-.collapse {
-  margin-bottom: 10px;
-}
+
 .collapse-hidden {
   transform: translateY(-100px);
   opacity: 0;
@@ -81,7 +79,7 @@
 .rule-group {
   text-align: left;
   margin-bottom: 12px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #ccc;
   border-radius: 4px;
   padding: 0;
   background: #fafafa;
@@ -154,7 +152,7 @@ body.group-drag-pressing * {
   gap: 4px 6px;
 }
 .group-outer-collapse > .ant-collapse-item > .ant-collapse-content > .ant-collapse-content-box {
-  padding: 0 8px 8px;
+  padding: 0;
 }
 .rules-inner-collapse {
   margin-bottom: 0;
@@ -198,6 +196,10 @@ body.group-drag-pressing * {
 }
 .rule-group .ant-collapse {
   background: #fff;
+  border: none;
+  &.rules-inner-collapse {
+    border-top: 1px solid #d9d9d9;
+  }
 }
 
 .match-url-preview {
@@ -231,6 +233,7 @@ body.group-drag-pressing * {
 
 .rule-group .ant-collapse-item {
   animation: none;
+  border-bottom: none;
 }
 .rule-group .ant-motion-collapse,
 .rule-group .ant-motion-collapse-active {

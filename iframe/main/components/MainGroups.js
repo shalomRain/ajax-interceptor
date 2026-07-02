@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { Collapse, Input, Select, Button, Switch, Icon } from 'antd'
 import Replacer from './Replacer'
 import MatchUrlPreview from './MatchUrlPreview'
@@ -8,6 +8,10 @@ const Panel = Collapse.Panel
 
 const DRAG_THRESHOLD_PX = 5
 const PRESS_STYLE_DELAY_MS = 500
+
+function isGroupExpanded (group) {
+  return group.expanded !== false
+}
 
 /** 关闭 antd Collapse 展开/收起高度动画，避免增删规则时列表抖动 */
 const collapseOpenAnimation = {
@@ -188,6 +192,7 @@ export default function MainGroups ({
   onAddRuleInGroup,
   onRemoveGroup,
   onGroupReorder,
+  onGroupExpandedChange,
   onCollapseChange,
   onLabelChange,
   onLimitMethodChange,
@@ -202,28 +207,14 @@ export default function MainGroups ({
 }) {
   const listRef = useRef(null)
   const dragStateRef = useRef({ fromIndex: null, overIndex: null })
-  const [groupActiveKeys, setGroupActiveKeys] = useState(() => (groups || []).map(g => g.id))
   const [dragFromIndex, setDragFromIndex] = useState(null)
   const [dragOverIndex, setDragOverIndex] = useState(null)
 
-  useEffect(() => {
-    const ids = (groups || []).map(g => g.id)
-    setGroupActiveKeys((prev) => {
-      const kept = prev.filter(id => ids.includes(id))
-      ids.forEach((id) => {
-        if (!kept.includes(id)) kept.push(id)
-      })
-      return kept
-    })
-  }, [groups])
-
   const toggleGroup = useCallback((groupId) => {
-    setGroupActiveKeys((prev) => (
-      prev.includes(groupId)
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
-    ))
-  }, [])
+    const g = (groups || []).find(item => item.id === groupId)
+    if (!g) return
+    onGroupExpandedChange(!isGroupExpanded(g), groupId)
+  }, [groups, onGroupExpandedChange])
 
   const resolveDropIndex = useCallback((clientY) => {
     const container = listRef.current
@@ -275,7 +266,7 @@ export default function MainGroups ({
         const groupRules = rules
           .map((r, i) => ({ r, i }))
           .filter(({ r }) => r.groupId === group.id)
-        const isExpanded = groupActiveKeys.includes(group.id)
+        const isExpanded = isGroupExpanded(group)
         const isDragSource = isDragging && dragFromIndex === index
         const showDropBefore = isDragging && dragOverIndex === index
 
@@ -297,11 +288,9 @@ export default function MainGroups ({
               activeKey={isExpanded ? [group.id] : []}
               onChange={(keys) => {
                 const open = keys.indexOf(group.id) >= 0
-                setGroupActiveKeys((prev) => (
-                  open
-                    ? [...prev.filter(id => id !== group.id), group.id]
-                    : prev.filter(id => id !== group.id)
-                ))
+                if (open !== isExpanded) {
+                  onGroupExpandedChange(open, group.id)
+                }
               }}
               expandIcon={() => null}
               className={[

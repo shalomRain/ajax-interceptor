@@ -82,6 +82,7 @@ export default class Main extends Component {
             onAddRuleInGroup={this.handleClickAddInGroup}
             onRemoveGroup={this.handleRemoveGroup}
             onGroupReorder={this.handleGroupReorder}
+            onGroupExpandedChange={this.handleGroupExpandedChange}
             onCollapseChange={this.handleCollaseChange}
             onLabelChange={this.handleLabelChange}
             onLimitMethodChange={this.handleLimitMethodChange}

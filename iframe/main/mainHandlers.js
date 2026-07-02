@@ -95,8 +95,17 @@ export const mainHandlerMethods = {
       id: buildUUID(),
       name: '',
       domain: '',
-      switchOn: true
+      switchOn: true,
+      expanded: true
     })
+    this.set('ajaxInterceptor_groups', window.setting.ajaxInterceptor_groups)
+    this.forceUpdate()
+  },
+
+  handleGroupExpandedChange (expanded, groupId) {
+    const g = window.setting.ajaxInterceptor_groups.find((x) => x.id === groupId)
+    if (!g || g.expanded === expanded) return
+    g.expanded = expanded
     this.set('ajaxInterceptor_groups', window.setting.ajaxInterceptor_groups)
     this.forceUpdate()
   },
