@@ -3,7 +3,66 @@ let ajax_interceptor_qoweifjqon = {
   settings: {
     ajaxInterceptor_switchOn: false,
     ajaxInterceptor_always200On: true, // 默认开启，后期可以扩展成设置项
+    ajaxInterceptor_groups: [],
     ajaxInterceptor_rules: [],
+  },
+  isRuleGroupOn: (item) => {
+    const groupId = item && item.groupId
+    const groups = ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_groups || []
+    if (!groupId) {
+      return !groups.length || (groups[0] && groups[0].switchOn)
+    }
+    const g = groups.find(x => x && x.id === groupId)
+    if (!g) return true
+    return g.switchOn !== false
+  },
+  getGroupById: (groupId) => {
+    const groups = ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_groups || []
+    if (!groupId) return groups[0] || null
+    return groups.find(x => x && x.id === groupId) || null
+  },
+  normalizeGroupDomain: (domain) => {
+    if (!domain || typeof domain !== 'string') return ''
+    let d = domain.trim()
+    if (!d) return ''
+    try {
+      if (/^https?:\/\//i.test(d)) {
+        return new URL(d).host.toLowerCase()
+      }
+    } catch (e) {}
+    return d.split('/')[0].split('?')[0].toLowerCase()
+  },
+  joinDomainAndPath: (domain, path) => {
+    const host = ajax_interceptor_qoweifjqon.normalizeGroupDomain(domain)
+    const p = (path || '').trim()
+    if (!host) return p
+    if (!p) return host
+    const pathPart = p.startsWith('/') ? p : '/' + p
+    return host + pathPart
+  },
+  /** 组未填域名时不限制；填写后请求 host 须与域名一致 */
+  isGroupDomainMatch: (requestUrl, groupId) => {
+    const group = ajax_interceptor_qoweifjqon.getGroupById(groupId)
+    const domain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(group && group.domain)
+    if (!domain) return true
+    try {
+      const host = new URL(requestUrl, window.location.href).host.toLowerCase()
+      return host === domain
+    } catch (e) {
+      return false
+    }
+  },
+  /** 组有域名时仅在 pathname+search 上匹配路径；无域名时在完整 URL 上匹配（兼容旧行为） */
+  getRuleMatchTarget: (requestUrl, groupId) => {
+    const group = ajax_interceptor_qoweifjqon.getGroupById(groupId)
+    const domain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(group && group.domain)
+    if (!domain) return requestUrl
+    try {
+      const u = new URL(requestUrl, window.location.href)
+      return u.pathname + u.search
+    } catch (e) {
+      return requestUrl
+    }
   },
   // 获取匹配到的规则项
   getMatchedInterface: ({
@@ -14,10 +73,31 @@ let ajax_interceptor_qoweifjqon = {
       const {
         filterType = 'normal', limitMethod = 'ALL', switchOn = true, match
       } = item
+      if (!match || !switchOn || !ajax_interceptor_qoweifjqon.isRuleGroupOn(item)) {
+        return false
+      }
+      if (!ajax_interceptor_qoweifjqon.isGroupDomainMatch(thisRequestUrl, item.groupId)) {
+        return false
+      }
       const matchedMethod = thisMethod === limitMethod || limitMethod === 'ALL'
-      const matchedRequest = (filterType === 'normal' && thisRequestUrl.indexOf(match) > -1) ||
-        (filterType === 'regex' && thisRequestUrl.match(new RegExp(match, 'i')))
-      return switchOn && matchedMethod && matchedRequest
+      const group = ajax_interceptor_qoweifjqon.getGroupById(item.groupId)
+      const groupDomain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(group && group.domain)
+      const matchTarget = ajax_interceptor_qoweifjqon.getRuleMatchTarget(thisRequestUrl, item.groupId)
+      let matchedRequest = false
+      if (filterType === 'normal') {
+        if (groupDomain) {
+          const combined = ajax_interceptor_qoweifjqon.joinDomainAndPath(group && group.domain, match)
+          const pathNorm = match.startsWith('/') ? match : '/' + match
+          matchedRequest = thisRequestUrl.indexOf(combined) > -1 ||
+            matchTarget.indexOf(match) > -1 ||
+            matchTarget.indexOf(pathNorm) > -1
+        } else {
+          matchedRequest = matchTarget.indexOf(match) > -1
+        }
+      } else if (filterType === 'regex') {
+        matchedRequest = !!matchTarget.match(new RegExp(match, 'i'))
+      }
+      return matchedMethod && matchedRequest
     })
   },
   // 执行用户输入的函数，如果有错误会抛出到控制台
@@ -28,6 +108,57 @@ let ajax_interceptor_qoweifjqon = {
       console.error(`[Ajax Modifier] ExecuteFunctionError: Please check the ${funcName} function.\n`, e)
     }
     return stringFunction;
+  },
+  /** replaceMode: json | advanced | mockjs | ts-mock；未设置时按 isExpert 兼容旧数据 */
+  isAdvancedRule: (item) => {
+    if (!item) return false
+    const m = item.replaceMode
+    if (m === 'advanced') return true
+    if (m === 'json' || m === 'mockjs' || m === 'ts-mock') return false
+    return !!item.isExpert
+  },
+  /** mockjs / ts-mock 均使用 overrideTxt 存 Mock 模板 JSON（ts-mock 在面板内由 TS 生成） */
+  isMockjsTemplateRule: (item) => item && (item.replaceMode === 'mockjs' || item.replaceMode === 'ts-mock'),
+  /**
+   * 兼容别名：Mock.js 内置没有 @number（只有 @integer/@float/@natural...）
+   * 如果用户写了 @number 或 @number(a,b)，这里自动转换为 @integer(...)
+   */
+  normalizeMockTemplate: (input) => {
+    const walk = (val) => {
+      if (val == null) return val
+      if (Array.isArray(val)) return val.map(walk)
+      if (typeof val === 'object') {
+        const out = {}
+        Object.keys(val).forEach((k) => {
+          out[k] = walk(val[k])
+        })
+        return out
+      }
+      if (typeof val === 'string') {
+        const s = val.trim()
+        if (s === '@number') return '@integer(0, 999999999)'
+        if (s.startsWith('@number(') && s.endsWith(')')) {
+          return '@integer' + s.slice('@number'.length)
+        }
+        return val
+      }
+      return val
+    }
+    return walk(input)
+  },
+  mockResponseFromOverrideTxt: (overrideTxt) => {
+    try {
+      if (typeof Mock === 'undefined') {
+        console.error('[Ajax Modifier] Mock.js is not loaded.')
+        return overrideTxt
+      }
+      const template = ajax_interceptor_qoweifjqon.normalizeMockTemplate(JSON.parse(overrideTxt))
+      const data = Mock.mock(template)
+      return typeof data === 'string' ? data : JSON.stringify(data)
+    } catch (e) {
+      console.error('[Ajax Modifier] Mock.js template generate error:\n', e)
+      return overrideTxt
+    }
   },
   getRequestParams: (requestUrl) => {
     if (!requestUrl) {
@@ -70,7 +201,6 @@ let ajax_interceptor_qoweifjqon = {
   },
   originalXHR: window.XMLHttpRequest,
   myXHR: function () {
-    let pageScriptEventDispatched = false
     const modifyResponse = () => {
       const [method, requestUrl] = this._openArgs
       const queryParams = ajax_interceptor_qoweifjqon.getRequestParams(requestUrl)
@@ -79,23 +209,15 @@ let ajax_interceptor_qoweifjqon = {
       if (matchedInterface && (matchedInterface.overrideTxt || matchedInterface.overrideResponseFunc)) {
         const {
           overrideTxt,
-          overrideResponseFunc,
-          match,
-          isExpert = false
+          overrideResponseFunc
         } = matchedInterface
+        const isAdvanced = ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
+        const isMockjs = ajax_interceptor_qoweifjqon.isMockjsTemplateRule(matchedInterface)
         let overrideResponse = undefined
         let overrideStatus = undefined
         let overrideStatusText = undefined
-        if (overrideTxt && !isExpert) {
-          // 普通模式，直接替换
-          overrideResponse = overrideTxt
-          // 状态用200覆盖
-          if (ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_always200On && this.status !== 200) {
-            overrideStatus = 200
-            overrideStatusText = 'OK'
-          }
-        } else if (overrideResponseFunc && isExpert) {
-          // 专业模式，用函数替换
+        if (overrideResponseFunc && isAdvanced) {
+          // Advanced：用函数替换
           const funcArgs = {
             method,
             payload: {
@@ -120,21 +242,26 @@ let ajax_interceptor_qoweifjqon = {
           } else {
             console.error(`[Ajax Modifier] ExecuteFunctionError: Please check your return in the response function. See more details in the examples. \n`)
           }
+        } else if (overrideTxt && isMockjs) {
+          // Mock.js / ts-mock：overrideTxt 为 Mock 模板 JSON，每次请求重新随机
+          overrideResponse = ajax_interceptor_qoweifjqon.mockResponseFromOverrideTxt(overrideTxt)
+          if (ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_always200On && this.status !== 200) {
+            overrideStatus = 200
+            overrideStatusText = 'OK'
+          }
+        } else if (overrideTxt && !isAdvanced) {
+          // 普通 JSON，直接替换
+          overrideResponse = overrideTxt
+          if (ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_always200On && this.status !== 200) {
+            overrideStatus = 200
+            overrideStatusText = 'OK'
+          }
         }
         // 没有返回不替换
         this.responseText = overrideResponse !== undefined ? overrideResponse : this.responseText
         this.response = overrideResponse !== undefined ? overrideResponse : this.response
         this.status = overrideStatus !== undefined ? overrideStatus : this.status
         this.statusText = overrideStatusText !== undefined ? overrideStatusText : this.statusText
-        if (!pageScriptEventDispatched) {
-          window.dispatchEvent(new CustomEvent("pageScript", {
-            detail: {
-              url: this.responseURL,
-              match
-            }
-          }))
-          pageScriptEventDispatched = true
-        }
       }
     }
 
@@ -170,10 +297,10 @@ let ajax_interceptor_qoweifjqon = {
           // modify request
           if (matchedInterface) {
             const {
-              overridePayloadFunc,
-              isExpert = false
+              overridePayloadFunc
             } = matchedInterface
-            if (overridePayloadFunc && isExpert && args[0] && args[1] && args[0].toUpperCase() === 'GET') {
+            const isAdvanced = ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
+            if (overridePayloadFunc && isAdvanced && args[0] && args[1] && args[0].toUpperCase() === 'GET') {
               const queryParams = ajax_interceptor_qoweifjqon.getRequestParams(args[1])
               const data = {
                 requestUrl: args[1],
@@ -194,7 +321,7 @@ let ajax_interceptor_qoweifjqon = {
             [args[0]]: args[1]
           };
           const matchedInterface = this._matchedInterface;
-          if (!(matchedInterface && matchedInterface.overrideHeadersFunc && matchedInterface.isExpert)) { // 没有要拦截修改或添加的header
+          if (!(matchedInterface && matchedInterface.overrideHeadersFunc && ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface))) { // 没有要拦截修改或添加的header
             xhr.setRequestHeader && xhr.setRequestHeader.apply(xhr, args);
           }
         }
@@ -206,10 +333,10 @@ let ajax_interceptor_qoweifjqon = {
             // modify headers
             const {
               overrideHeadersFunc,
-              overridePayloadFunc,
-              isExpert = false
+              overridePayloadFunc
             } = matchedInterface
-            if (overrideHeadersFunc && isExpert) {
+            const isAdvanced = ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
+            if (overrideHeadersFunc && isAdvanced) {
               const headers = ajax_interceptor_qoweifjqon.executeStringFunction(overrideHeadersFunc, this._headerArgs, 'headers')
               Object.keys(headers).forEach((key) => {
                 xhr.setRequestHeader && xhr.setRequestHeader.apply(xhr, [key, headers[key]]);
@@ -217,7 +344,7 @@ let ajax_interceptor_qoweifjqon = {
             }
             // modify not GET payload
             const [method] = this._openArgs
-            if (overridePayloadFunc && isExpert && method !== 'GET') {
+            if (overridePayloadFunc && isAdvanced && method !== 'GET') {
               args[0] = ajax_interceptor_qoweifjqon.executeStringFunction(overridePayloadFunc, args[0], 'payload');
             }
           }
@@ -338,14 +465,14 @@ let ajax_interceptor_qoweifjqon = {
       }
       const {
         overrideHeadersFunc,
-        overridePayloadFunc,
-        isExpert = false
+        overridePayloadFunc
       } = matchedInterface;
-      if (overrideHeadersFunc && isExpert && data) {
+      const isAdvancedFetch = ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
+      if (overrideHeadersFunc && isAdvancedFetch && data) {
         const headers = ajax_interceptor_qoweifjqon.executeStringFunction(overrideHeadersFunc, this._headerArgs, 'headers')
         args[1].headers = headers
       }
-      if (overridePayloadFunc && isExpert && requestUrl && data) {
+      if (overridePayloadFunc && isAdvancedFetch && requestUrl && data) {
         const {
           method
         } = data
@@ -373,33 +500,20 @@ let ajax_interceptor_qoweifjqon = {
     }
     return ajax_interceptor_qoweifjqon.originalFetch(...args).then(async (response) => {
       if (matchedInterface && (matchedInterface.overrideTxt || matchedInterface.overrideResponseFunc)) {
-        window.dispatchEvent(new CustomEvent("pageScript", {
-          detail: {
-            url: response.url,
-            match: matchedInterface.match
-          }
-        }))
         let txt = undefined
         txt = matchedInterface.overrideTxt
         const {
           overrideTxt,
-          overrideResponseFunc,
-          isExpert = false
+          overrideResponseFunc
         } = matchedInterface
+        const isAdvanced = ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
+        const isMockjs = ajax_interceptor_qoweifjqon.isMockjsTemplateRule(matchedInterface)
         let overrideResponse = undefined
         let overrideStatus = undefined
         let overrideStatusText = undefined
 
-        if (overrideTxt && !isExpert) {
-          // 普通模式，直接替换
-          overrideResponse = overrideTxt
-          // 状态用200覆盖
-          if (ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_always200On && this.status !== 200) {
-            overrideStatus = 200
-            overrideStatusText = 'OK'
-          }
-        } else if (overrideResponseFunc && isExpert) {
-          // 专业模式，用函数替换
+        if (overrideResponseFunc && isAdvanced) {
+          // Advanced：用函数替换
           const queryParams = ajax_interceptor_qoweifjqon.getRequestParams(requestUrl)
           const orgResponse = await getOriginalResponse(response.body);
           const funcArgs = {
@@ -424,6 +538,19 @@ let ajax_interceptor_qoweifjqon = {
             overrideStatusText = newStatusText
           } else {
             console.error(`[Ajax Modifier] ExecuteFunctionError: Please check your return in the response function. See more details in the examples. \n`)
+          }
+        } else if (overrideTxt && isMockjs) {
+          overrideResponse = ajax_interceptor_qoweifjqon.mockResponseFromOverrideTxt(overrideTxt)
+          if (ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_always200On && response.status !== 200) {
+            overrideStatus = 200
+            overrideStatusText = 'OK'
+          }
+        } else if (overrideTxt && !isAdvanced) {
+          // 普通 JSON，直接替换
+          overrideResponse = overrideTxt
+          if (ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_always200On && response.status !== 200) {
+            overrideStatus = 200
+            overrideStatusText = 'OK'
           }
         }
         txt = overrideResponse !== undefined ? overrideResponse : response.responseText
@@ -476,14 +603,52 @@ window.addEventListener("message", function (event) {
   const data = event.data
 
   if (data.type === 'ajaxInterceptor' && data.to === 'pageScript') {
+    // ts-mock 预览：在页面环境使用全局 Mock 生成一次随机结果，并回传 content script
+    if (data.action === 'mockPreview') {
+      const { requestId, templateText } = data
+      try {
+        if (typeof Mock === 'undefined') {
+          window.postMessage({
+            type: 'ajaxInterceptor',
+            to: 'content',
+            action: 'mockPreviewResult',
+            requestId,
+            ok: false,
+            error: 'Mock.js 未加载（请刷新页面后重试）'
+          }, '*')
+          return
+        }
+        const template = ajax_interceptor_qoweifjqon.normalizeMockTemplate(JSON.parse(templateText || '{}'))
+        const out = Mock.mock(template)
+        window.postMessage({
+          type: 'ajaxInterceptor',
+          to: 'content',
+          action: 'mockPreviewResult',
+          requestId,
+          ok: true,
+          body: typeof out === 'string' ? out : JSON.stringify(out, null, 2)
+        }, '*')
+      } catch (e) {
+        window.postMessage({
+          type: 'ajaxInterceptor',
+          to: 'content',
+          action: 'mockPreviewResult',
+          requestId,
+          ok: false,
+          error: (e && e.message) ? e.message : String(e)
+        }, '*')
+      }
+      return
+    }
+
     ajax_interceptor_qoweifjqon.settings[data.key] = data.value
   }
 
   if (ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_switchOn) {
     // https://github.com/YGYOOO/ajax-interceptor/issues/78
     // https://github.com/YGYOOO/ajax-interceptor/issues/93
-    for (const k in ajax_tools_space.originalXHR) {
-      ajax_tools_space.myXHR[k] = ajax_tools_space.originalXHR[k]
+    for (const k in ajax_interceptor_qoweifjqon.originalXHR) {
+      ajax_interceptor_qoweifjqon.myXHR[k] = ajax_interceptor_qoweifjqon.originalXHR[k]
     }
     window.XMLHttpRequest = ajax_interceptor_qoweifjqon.myXHR
     window.fetch = ajax_interceptor_qoweifjqon.myFetch

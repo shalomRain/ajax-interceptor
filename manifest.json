@@ -20,6 +20,7 @@
     {
       "resources": [
         "pageScripts/defaultSettings.js",
+        "pageScripts/mockjs.js",
         "pageScripts/main.js",
         "iframe/index.html"
       ],
@@ -28,7 +29,10 @@
       ]
     }
   ],
-  "action": {},
+  "action": {
+    "default_popup": "iframe/index.html",
+    "default_title": "点击打开面板"
+  },
   "content_security_policy": {},
   "host_permissions": [
     "http://*/",
