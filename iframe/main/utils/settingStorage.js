@@ -44,16 +44,16 @@ export function countValidGlobalHeaders (raw) {
   return list.filter((item) => String(item.key || '').trim()).length
 }
 
-/** 全局头是否会真实生效（开关开且至少一条有效 key） */
+/** 全局头开关是否打开（用于工具栏高亮，与弹窗内开关一致） */
 export function isGlobalHeadersActive (raw) {
-  const conf = normalizeGlobalHeaders(raw)
-  return !!(conf.switchOn && countValidGlobalHeaders(conf) > 0)
+  return !!normalizeGlobalHeaders(raw).switchOn
 }
 
-/** 工具栏状态文案：仅真实会加头时显示 Headers · N，否则 Headers · OFF */
+/** 工具栏状态文案：关 → OFF；开 → Headers · N（可为 0） */
 export function getGlobalHeadersStatusLabel (raw) {
-  if (!isGlobalHeadersActive(raw)) return 'Headers · OFF'
-  return `Headers · ${countValidGlobalHeaders(raw)}`
+  const conf = normalizeGlobalHeaders(raw)
+  if (!conf.switchOn) return 'Headers · OFF'
+  return `Headers · ${countValidGlobalHeaders(conf)}`
 }
 
 /** 已开启的 Mock 规则条数 */
