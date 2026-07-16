@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajax Modifier 使用说明</title>
+  <style>
+    :root {
+      --primary: #1890ff;
+      --primary-dark: #096dd9;
+      --text: #262626;
+      --text-secondary: #595959;
+      --border: #e8e8e8;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --success: #52c41a;
+      --warning: #faad14;
+      --danger: #ff4d4f;
+      --code-bg: #f6f8fa;
+      --sidebar-width: 240px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB",
+        "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    /* 顶部横幅 */
+    .hero {
+      background: linear-gradient(135deg, #1890ff 0%, #096dd9 60%, #0050b3 100%);
+      color: #fff;
+      padding: 48px 32px 40px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+    .hero .subtitle {
+      font-size: 1.05rem;
+      color: rgba(255,255,0,0.8);
+      max-width: 680px;
+      margin: 0 auto 20px;
+    }
+    .hero .version {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 4px 16px;
+      font-size: 0.85rem;
+    }
+
+    /* 布局 */
+    .layout {
+      display: flex;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+      gap: 32px;
+    }
+
+    /* 侧边导航 */
+    .sidebar {
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      position: sticky;
+      top: 24px;
+      align-self: flex-start;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+    .sidebar nav {
+      background: var(--card);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 16px 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .sidebar nav a {
+      display: block;
+      padding: 8px 20px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      border-left: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      color: var(--primary);
+      background: #e6f7ff;
+      border-left-color: var(--primary);
+    }
+
+    /* 主内容 */
+    .content { flex: 1; min-width: 0; }
+
+    section {
+      background: var(--card);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+
+    section h2 {
+      font-size: 1.35rem;
+      color: var(--text);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    section h2 .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+
+    section h3 {
+      font-size: 1.05rem;
+      margin: 20px 0 10px;
+      color: var(--text);
+    }
+
+    p { margin-bottom: 12px; color: var(--text-secondary); }
+    p:last-child { margin-bottom: 0; }
+
+    ul, ol {
+      margin: 0 0 12px 20px;
+      color: var(--text-secondary);
+    }
+    li { margin-bottom: 6px; }
+
+    /* 功能卡片网格 */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .feature-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+    .feature-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(24,144,255,0.12);
+    }
+    .feature-card .icon {
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+    }
+    .feature-card h4 {
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .feature-card p {
+      font-size: 0.88rem;
+      margin: 0;
+    }
+
+    /* 场景标签 */
+    .scenario-list { list-style: none; margin-left: 0; }
+    .scenario-list li {
+      padding: 14px 16px;
+      border-left: 4px solid var(--primary);
+      background: #fafafa;
+      border-radius: 0 6px 6px 0;
+      margin-bottom: 12px;
+    }
+    .scenario-list li strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    /* 步骤 */
+    .steps { counter-reset: step; list-style: none; margin-left: 0; }
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding: 0 0 20px 44px;
+      border-left: 2px solid var(--border);
+      margin-left: 14px;
+    }
+    .steps li:last-child { border-left-color: transparent; padding-bottom: 0; }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: -15px;
+      top: 0;
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .steps li strong { color: var(--text); }
+
+    /* 代码块 */
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.88em;
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #c7254e;
+    }
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 12px 0;
+    }
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+
+    /* 提示框 */
+    .tip, .warn, .info {
+      padding: 14px 16px;
+      border-radius: 6px;
+      margin: 16px 0;
+      font-size: 0.92rem;
+    }
+    .tip {
+      background: #f6ffed;
+      border: 1px solid #b7eb8f;
+      color: #389e0d;
+    }
+    .warn {
+      background: #fffbe6;
+      border: 1px solid #ffe58f;
+      color: #d48806;
+    }
+    .info {
+      background: #e6f7ff;
+      border: 1px solid #91d5ff;
+      color: #096dd9;
+    }
+    .tip::before { content: "💡 "; }
+    .warn::before { content: "⚠️ "; }
+    .info::before { content: "ℹ️ "; }
+
+    /* 表格 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      text-align: left;
+    }
+    th {
+      background: #fafafa;
+      color: var(--text);
+      font-weight: 600;
+    }
+    td { color: var(--text-secondary); }
+
+    /* 架构图 */
+    .arch-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 20px 0;
+      padding: 20px;
+      background: #fafafa;
+      border-radius: 8px;
+      font-size: 0.88rem;
+    }
+    .arch-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      text-align: center;
+      min-width: 110px;
+    }
+    .arch-box.highlight {
+      border-color: var(--primary);
+      background: #e6f7ff;
+      font-weight: 600;
+    }
+    .arch-arrow { color: var(--primary); font-size: 1.2rem; font-weight: bold; }
+
+    /* 目录树 */
+    .tree {
+      font-family: monospace;
+      font-size: 0.88rem;
+      background: var(--code-bg);
+      padding: 16px 20px;
+      border-radius: 8px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      overflow-x: auto;
+    }
+
+    /* 页脚 */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: #8c8c8c;
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+    }
+
+    @media (max-width: 900px) {
+      .layout { flex-direction: column; padding: 20px 16px 48px; }
+      .sidebar { width: 100%; position: static; max-height: none; }
+      .sidebar nav { display: flex; flex-wrap: wrap; padding: 8px; }
+      .sidebar nav a { border-left: none; border-bottom: 2px solid transparent; padding: 6px 12px; }
+      section { padding: 20px 18px; }
+      .hero { padding: 32px 20px; }
+      .hero h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>Ajax Modifier 使用说明</h1>
+  <p class="subtitle">
+    一款 Chrome 浏览器扩展，可在任意网页中拦截并修改 XMLHttpRequest 与 fetch 请求/响应，
+    用于前端调试、问题排查与 Mock 数据开发。
+  </p>
+  <span class="version">当前版本 v1.5.7 · Manifest V3</span>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <nav>
+      <a href="#overview">项目简介</a>
+      <a href="#features">核心功能</a>
+      <a href="#scenarios">使用场景</a>
+      <a href="#install">安装方式</a>
+      <a href="#quickstart">快速上手</a>
+      <a href="#rules">规则配置</a>
+      <a href="#modes">替换模式</a>
+      <a href="#panel">面板位置</a>
+      <a href="#architecture">工作原理</a>
+      <a href="#structure">项目结构</a>
+      <a href="#notes">注意事项</a>
+    </nav>
+  </aside>
+
+  <main class="content">
+
+    <!-- 1. 项目简介 -->
+    <section id="overview">
+      <h2><span class="num">1</span>项目简介</h2>
+      <p>
+        <strong>Ajax Modifier</strong>（原名 Ajax Interceptor）是一个 Chrome 扩展程序。
+        它通过在页面中注入脚本，劫持全局的 <code>XMLHttpRequest</code> 和 <code>fetch</code> 方法，
+        在 JavaScript 层面修改网络请求的请求头、请求体以及响应内容，从而影响页面的数据展示与业务逻辑。
+      </p>
+      <p>
+        与 Charles、Fiddler 等抓包工具不同，本扩展<strong>无需配置系统代理</strong>，
+        操作直接在浏览器内完成，只影响当前 Chrome 浏览器中的页面，不会对系统其他应用产生干扰，使用更加轻便。
+      </p>
+      <div class="info">
+        扩展仅在 JS 运行时修改返回值，DevTools「Network」面板中看到的原始响应不会改变。
+        页面实际拿到的数据才是被修改后的结果。
+      </div>
+    </section>
+
+    <!-- 2. 核心功能 -->
+    <section id="features">
+      <h2><span class="num">2</span>核心功能</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="icon">🔀</div>
+          <h4>拦截 XHR 与 fetch</h4>
+          <p>同时支持 XMLHttpRequest 和 fetch 两种主流请求方式，覆盖绝大多数前端项目。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📝</div>
+          <h4>修改响应内容</h4>
+          <p>将接口返回替换为自定义 JSON、Mock 随机数据，或通过函数动态处理响应。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">⚙️</div>
+          <h4>修改请求（Advanced 模式）</h4>
+          <p>支持修改请求 Headers、GET 查询参数、POST 请求体，实现更精细的调试。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🎯</div>
+          <h4>灵活的 URL 匹配</h4>
+          <p>支持普通字符串匹配和正则表达式匹配，可按 HTTP Method 过滤，支持域名分组。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📦</div>
+          <h4>规则分组管理</h4>
+          <p>按项目/域名分组管理规则，支持组级开关、拖拽排序、单条规则开关与复制。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🎲</div>
+          <h4>Mock.js 随机数据</h4>
+          <p>内置 Mock.js，支持模板语法生成随机 Mock 数据，每次请求可产生不同结果。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📐</div>
+          <h4>ts-mock（TypeScript 接口转 Mock）</h4>
+          <p>粘贴 TypeScript interface 定义，自动转换为 Mock.js 模板，并支持预览生成结果。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">💾</div>
+          <h4>配置导入/导出</h4>
+          <p>一键导出所有规则为 JSON 备份文件，可在其他设备或团队中导入复用。</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🖥️</div>
+          <h4>双面板位置</h4>
+          <p>支持页面右侧悬浮面板和 DevTools 独立面板两种展示方式，按需切换。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 使用场景 -->
+    <section id="scenarios">
+      <h2><span class="num">3</span>使用场景</h2>
+      <ul class="scenario-list">
+        <li>
+          <strong>前端开发 Mock 数据</strong>
+          后端接口尚未就绪时，用固定 JSON 或 Mock.js 模板模拟接口返回，前端可独立推进开发，无需等待联调。
+        </li>
+        <li>
+          <strong>联调与 Bug 排查</strong>
+          复现特定数据场景（如空列表、异常状态码、边界值），快速验证页面在各种数据下的展示与逻辑是否正确。
+        </li>
+        <li>
+          <strong>演示与产品验收</strong>
+          在演示环境中将真实接口数据替换为理想数据，避免因测试数据不完整影响演示效果。
+        </li>
+        <li>
+          <strong>权限与状态模拟</strong>
+          通过 Advanced 模式修改请求头（如 Token）或响应体（如用户角色），测试不同权限下的页面行为。
+        </li>
+        <li>
+          <strong>多环境接口切换</strong>
+          按域名分组管理不同项目的拦截规则，在同一浏览器中快速切换不同业务的 Mock 配置。
+        </li>
+        <li>
+          <strong>TypeScript 项目快速 Mock</strong>
+          已有 TS 类型定义时，使用 ts-mock 模式直接从 interface 生成 Mock 数据，减少手写模板的工作量。
+        </li>
+      </ul>
+    </section>
+
+    <!-- 4. 安装方式 -->
+    <section id="install">
+      <h2><span class="num">4</span>安装方式</h2>
+
+      <h3>方式一：Chrome 网上应用店（推荐）</h3>
+      <p>
+        访问 Chrome 应用商店安装，可自动更新：
+        <a href="https://chrome.google.com/webstore/detail/ajax-interceptor/nhpjggchkhnlbgdfcbgpdpkifemomkpg" target="_blank">
+          Ajax Modifier - Chrome Web Store
+        </a>
+      </p>
+
+      <h3>方式二：本地加载（开发者模式）</h3>
+      <ol class="steps">
+        <li>
+          <strong>构建面板 UI</strong><br>
+          进入 <code>iframe</code> 目录，安装依赖并打包：
+          <pre><code>cd iframe
+npm install
+npm run build</code></pre>
+        </li>
+        <li>
+          <strong>加载扩展</strong><br>
+          打开 Chrome，访问 <code>chrome://extensions/</code>，开启右上角「开发者模式」，
+          点击「加载已解压的扩展程序」，选择项目根目录 <code>ajax-interceptor</code>。
+        </li>
+        <li>
+          <strong>验证安装</strong><br>
+          浏览器工具栏出现扩展图标，点击可打开配置面板即表示安装成功。
+        </li>
+      </ol>
+    </section>
+
+    <!-- 5. 快速上手 -->
+    <section id="quickstart">
+      <h2><span class="num">5</span>快速上手</h2>
+      <ol class="steps">
+        <li>
+          <strong>打开目标网页</strong><br>
+          访问你需要调试的网站（如本地开发环境或测试环境页面）。
+        </li>
+        <li>
+          <strong>打开配置面板</strong><br>
+          点击浏览器工具栏中的扩展图标。默认使用「悬浮面板」模式时，面板从页面右侧滑出；
+          也可在设置中切换为 DevTools 面板模式。
+        </li>
+        <li>
+          <strong>开启总开关</strong><br>
+          面板左上角有一个主开关，打开后扩展开始生效。关闭时图标变灰，不影响页面正常浏览。
+        </li>
+        <li>
+          <strong>新建规则组</strong><br>
+          点击右上角 <code>+</code> 按钮新建一个规则组。可为组设置名称和域名（可选），
+          填写域名后匹配将限定在该域名下，只匹配路径部分。
+        </li>
+        <li>
+          <strong>添加拦截规则</strong><br>
+          在组内点击 <code>+</code> 添加规则，填写 URL 匹配关键字（如 <code>api/user/info</code>），
+          选择 HTTP 方法和匹配方式，然后在下方编辑器中填写替换内容。
+        </li>
+        <li>
+          <strong>刷新页面验证</strong><br>
+          保存规则后刷新页面，触发对应接口请求，观察页面数据是否按预期被替换。
+        </li>
+      </ol>
+
+      <div class="tip">
+        建议同时打开 DevTools → Network → 勾选「Disable cache（禁用缓存）」，
+        可提高页面刚加载时 Ajax 请求的拦截成功率。
+      </div>
+    </section>
+
+    <!-- 6. 规则配置 -->
+    <section id="rules">
+      <h2><span class="num">6</span>规则配置详解</h2>
+
+      <h3>6.1 规则组</h3>
+      <p>规则按「组」组织，每个组可独立开关。组支持以下配置：</p>
+      <table>
+        <thead>
+          <tr><th>配置项</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>组名称</td><td>备注用途，如「用户中心」「订单模块」</td></tr>
+          <tr><td>域名</td><td>可选。填写后（如 <code>api.example.com</code>），组内规则只匹配该域名的请求，匹配关键字只需写路径部分</td></tr>
+          <tr><td>组开关</td><td>关闭后组内所有规则暂停拦截，不影响其他组</td></tr>
+          <tr><td>拖拽排序</td><td>长按组标题左侧箭头可拖拽调整组的顺序</td></tr>
+        </tbody>
+      </table>
+
+      <h3>6.2 单条规则</h3>
+      <table>
+        <thead>
+          <tr><th>配置项</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>备注名</td><td>可选，方便识别规则用途</td></tr>
+          <tr><td>HTTP Method</td><td>ALL / GET / POST / PUT / DELETE / HEAD / OPTIONS，限定匹配的请求方法</td></tr>
+          <tr><td>匹配方式</td><td><code>normal</code>：URL 包含关键字即匹配；<code>regex</code>：正则表达式匹配（忽略大小写）</td></tr>
+          <tr><td>匹配关键字</td><td>如 <code>abc/getList</code> 或正则 <code>abc.*</code>。填写组域名时只需写路径</td></tr>
+          <tr><td>规则开关</td><td>单独控制某条规则是否生效，无需删除规则</td></tr>
+          <tr><td>复制规则</td><td>快速复制当前规则到同组，便于创建相似配置</td></tr>
+        </tbody>
+      </table>
+
+      <h3>6.3 匹配优先级</h3>
+      <p>
+        当多个规则同时匹配同一请求时，使用规则数组中<strong>第一个</strong>匹配成功的规则。
+        可通过调整组的顺序和规则的添加顺序来控制优先级。
+      </p>
+
+      <h3>6.4 匹配 URL 预览</h3>
+      <p>
+        每条规则下方会显示「匹配范围示意」，展示该规则实际会拦截的 URL 范围，
+        帮助确认配置是否正确。
+      </p>
+    </section>
+
+    <!-- 7. 替换模式 -->
+    <section id="modes">
+      <h2><span class="num">7</span>替换模式</h2>
+      <p>每条规则支持四种替换模式，在规则展开区域的「替换模式」下拉框中选择：</p>
+
+      <h3>7.1 普通 JSON</h3>
+      <p>
+        最简单的方式。在 Monaco 编辑器中直接填写 JSON 字符串，请求匹配成功后，
+        响应体会被完整替换为你填写的内容。非 200 状态码的响应默认也会被改为 200。
+      </p>
+      <pre><code>{
+  "code": 0,
+  "data": {
+    "name": "测试用户",
+    "role": "admin"
+  },
+  "message": "success"
+}</code></pre>
+
+      <h3>7.2 Advanced Mode（高级模式）</h3>
+      <p>
+        通过编写 JavaScript 函数，灵活修改请求和响应。支持三个编辑区域：
+      </p>
+      <table>
+        <thead>
+          <tr><th>编辑区</th><th>作用</th><th>适用请求</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Headers</td><td>修改或新增请求头</td><td>所有方法</td></tr>
+          <tr><td>Payload</td><td>修改 GET 的 URL 参数，或 POST/PUT 等的请求体</td><td>GET 修改 URL；其他方法修改 body</td></tr>
+          <tr><td>Response</td><td>根据原始响应动态生成新响应，可修改 status 和 statusText</td><td>所有方法</td></tr>
+        </tbody>
+      </table>
+      <p>Response 函数需返回对象，例如：</p>
+      <pre><code>// arguments[0] 包含 method、payload、orgResponse、orgStatus 等
+const { orgResponse, orgStatus } = arguments[0]
+const data = JSON.parse(orgResponse)
+data.extra = 'injected by Ajax Modifier'
+return {
+  response: JSON.stringify(data),
+  status: 200,
+  statusText: 'OK'
+}</code></pre>
+
+      <h3>7.3 Mock.js</h3>
+      <p>
+        使用 <a href="http://mockjs.com/" target="_blank">Mock.js</a> 模板语法，
+        每次请求根据模板随机生成数据。适合需要随机性、列表数据、分页等场景。
+      </p>
+      <pre><code>{
+  "code": 0,
+  "data": {
+    "list|5-10": [{
+      "id": "@guid",
+      "name": "@cname",
+      "age": "@integer(18, 60)",
+      "email": "@email"
+    }],
+    "total": "@integer(50, 200)"
+  }
+}</code></pre>
+      <p>支持从 TypeScript interface 一键生成 Mock.js 模板（点击「从 TS 生成」按钮）。</p>
+
+      <h3>7.4 ts-mock</h3>
+      <p>
+        直接粘贴 TypeScript 的 <code>interface</code> 定义，扩展会自动解析类型并生成 Mock.js 模板。
+        支持常见类型（string、number、boolean、数组、嵌套对象等），
+        并根据字段名智能推断（如 <code>billCode</code> 生成 13 位数字）。
+        可点击「预览」在页面环境中执行 Mock 并查看一次随机结果。
+      </p>
+      <pre><code>interface UserInfo {
+  id: number
+  name: string
+  billCode: string
+  items: Item[]
+}
+
+interface Item {
+  title: string
+  count: number
+}</code></pre>
+    </section>
+
+    <!-- 8. 面板位置 -->
+    <section id="panel">
+      <h2><span class="num">8</span>面板位置</h2>
+      <p>点击面板右上角「设置」图标，可选择两种面板展示方式：</p>
+
+      <table>
+        <thead>
+          <tr><th>模式</th><th>说明</th><th>适用情况</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Suspend（悬浮，默认）</td>
+            <td>面板嵌入页面右侧，点击扩展图标滑出/收起</td>
+            <td>日常开发调试，操作最便捷</td>
+          </tr>
+          <tr>
+            <td>Devtools</td>
+            <td>面板出现在 Chrome 开发者工具的独立标签页中</td>
+            <td>习惯在 DevTools 中工作，或需要更大编辑区域时</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="warn">
+        切换面板位置后需要<strong>刷新页面</strong>才能生效。
+        在 DevTools 分离窗口模式下修改规则，可能无法同步到页面脚本，面板会提示需要刷新。
+      </div>
+    </section>
+
+    <!-- 9. 工作原理 -->
+    <section id="architecture">
+      <h2><span class="num">9</span>工作原理</h2>
+      <p>扩展由多个模块协作完成拦截，数据流向如下：</p>
+
+      <div class="arch-flow">
+        <div class="arch-box">用户操作面板<br><small>iframe UI</small></div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-box">Service Worker<br><small>消息中转</small></div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-box">Content Script<br><small>content.js</small></div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-box highlight">Page Script<br><small>main.js</small></div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-box">页面 XHR / fetch</div>
+      </div>
+
+      <h3>各模块职责</h3>
+      <table>
+        <thead>
+          <tr><th>模块</th><th>文件</th><th>职责</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Service Worker</td>
+            <td><code>service_worker.js</code></td>
+            <td>注册 Content Script、转发面板与页面间的消息、管理扩展图标状态</td>
+          </tr>
+          <tr>
+            <td>Content Script</td>
+            <td><code>content.js</code></td>
+            <td>在 <code>document_start</code> 时注入页面脚本；悬浮模式下嵌入 iframe 面板</td>
+          </tr>
+          <tr>
+            <td>Page Script</td>
+            <td><code>pageScripts/main.js</code></td>
+            <td>在页面上下文中劫持 XHR/fetch，执行规则匹配与数据替换（可访问页面变量）</td>
+          </tr>
+          <tr>
+            <td>Mock.js</td>
+            <td><code>pageScripts/mockjs.js</code></td>
+            <td>提供 Mock 随机数据生成能力</td>
+          </tr>
+          <tr>
+            <td>配置面板</td>
+            <td><code>iframe/</code></td>
+            <td>React + Ant Design 构建的 UI，管理规则、设置，数据持久化到 <code>chrome.storage.local</code></td>
+          </tr>
+          <tr>
+            <td>DevTools 面板</td>
+            <td><code>devtools.js</code></td>
+            <td>在 DevTools 中注册「Ajax Modifier」标签页（仅 DevTools 模式）</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>拦截流程（简化）</h3>
+      <ol>
+        <li>页面发起 XHR 或 fetch 请求</li>
+        <li>Page Script 在 <code>open()</code> 阶段根据 URL 和方法匹配规则</li>
+        <li>Advanced 模式下，在发送前修改 Headers 和 Payload</li>
+        <li>请求正常发送到服务器，获取真实响应</li>
+        <li>在 <code>onreadystatechange</code> / <code>onload</code>（XHR）或响应读取阶段（fetch）替换响应内容</li>
+        <li>页面 JavaScript 拿到的是修改后的数据</li>
+      </ol>
+    </section>
+
+    <!-- 10. 项目结构 -->
+    <section id="structure">
+      <h2><span class="num">10</span>项目结构</h2>
+        <pre>
+  ajax-interceptor/
+  ├── manifest.json              # 扩展清单（Manifest V3）
+  ├── service_worker.js          # 后台 Service Worker
+  ├── content.js                 # 内容脚本（注入页面 + 悬浮 iframe）
+  ├── devtools.html / devtools.js # DevTools 面板注册
+  ├── pageScripts/
+  │   ├── main.js                # 核心拦截逻辑（XHR + fetch 劫持）
+  │   └── mockjs.js              # Mock.js 库
+  ├── iframe/                    # 配置面板 UI（React 项目）
+  │   ├── index.html             # 面板入口
+  │   ├── main/
+  │   │   ├── main.js            # React 主组件
+  │   │   ├── mainHandlers.js    # 事件处理逻辑
+  │   │   ├── components/
+  │   │   │   ├── MainToolbar.js     # 顶部工具栏
+  │   │   │   ├── MainGroups.js      # 规则组列表
+  │   │   │   ├── MainModals.js      # 设置弹窗
+  │   │   │   ├── Replacer/          # 替换内容编辑器
+  │   │   │   ├── Editor/            # Monaco 代码编辑器
+  │   │   │   └── MatchUrlPreview.js # 匹配 URL 预览
+  │   │   └── utils/
+  │   │       ├── settingStorage.js       # 配置存储与备份
+  │   │       └── tsInterfaceToMockTemplate.js  # TS → Mock 转换
+  │   └── package.json
+  ├── images/                    # 扩展图标
+  ├── popupDev.html              # DevTools 模式下的 popup 提示
+  ├── popupSusFresh.html         # 切换面板位置时的刷新提示
+  └── docs.html                  # 本说明文档
+        </pre>
+
+      <h3>本地开发面板 UI</h3>
+      <pre><code>cd iframe
+npm install
+npm start      # 开发服务器 http://localhost:8887
+npm run build  # 打包到 iframe/dist，供扩展加载</code></pre>
+    </section>
+
+    <!-- 11. 注意事项 -->
+    <section id="notes">
+      <h2><span class="num">11</span>注意事项</h2>
+
+      <div class="warn">
+        <strong>关闭缓存：</strong>使用扩展时，建议在 DevTools → Network 中勾选「Disable cache」，
+        避免浏览器缓存导致部分请求未被拦截。
+      </div>
+
+      <div class="warn">
+        <strong>不用时关闭总开关：</strong>调试完成后关闭面板左上角的主开关，
+        扩展图标变灰，页面恢复正常网络请求，避免对日常浏览产生影响。
+      </div>
+
+      <div class="info">
+        <strong>Network 面板不变：</strong>扩展只修改 JS 层面的 <code>response</code> / <code>responseText</code>，
+        DevTools Network 中显示的仍是服务器原始响应。以页面实际渲染结果为准。
+      </div>
+
+      <div class="info">
+        <strong>刷新同步：</strong>修改规则后通常即时生效；切换面板位置、首次安装、
+        或 DevTools 分离窗口模式下，可能需要刷新页面才能同步配置到 Page Script。
+      </div>
+
+      <div class="tip">
+        <strong>配置备份：</strong>点击面板右上角「导出」图标可将所有规则导出为 JSON 文件；
+        「导入」图标可恢复备份。适合团队共享 Mock 配置或在多台设备间迁移。
+      </div>
+
+      <h3>常见问题</h3>
+      <table>
+        <thead>
+          <tr><th>问题</th><th>可能原因与解决办法</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>规则配置了但不生效</td>
+            <td>检查总开关和组/规则开关是否打开；确认 URL 匹配关键字正确；刷新页面；关闭浏览器缓存</td>
+          </tr>
+          <tr>
+            <td>页面加载早期的请求未拦截</td>
+            <td>在 DevTools 中禁用缓存；确保扩展已启用且页面已刷新</td>
+          </tr>
+          <tr>
+            <td>DevTools 模式修改不生效</td>
+            <td>不要在 DevTools 分离窗口中刷新页面；修改后刷新主页面并重新打开 DevTools</td>
+          </tr>
+          <tr>
+            <td>Mock 预览报错</td>
+            <td>Mock 预览需在 Chrome 扩展环境中运行（非本地 webpack dev server）；检查 JSON 模板格式是否正确</td>
+          </tr>
+          <tr>
+            <td>相对路径 URL 匹配失败</td>
+            <td>v1.5.3+ 已支持相对 URL 自动补全；也可在组域名中指定完整域名后只匹配路径</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  Ajax Modifier 使用说明 · 基于项目源码整理 ·
+  <a href="https://github.com/YGYOOO/ajax-interceptor" target="_blank">GitHub</a>
+</footer>
+
+<script>
+  // 侧边栏高亮当前章节
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.sidebar nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -60% 0px' });
+
+  sections.forEach(section => observer.observe(section));
+</script>
+
+</body>
+</html>

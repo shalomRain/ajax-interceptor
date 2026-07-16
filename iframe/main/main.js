@@ -61,8 +61,10 @@ export default class Main extends Component {
         />
         <MainToolbar
           switchOn={switchOn}
+          expandAllActive={this.isAllExpanded()}
           showRefreshTip={this.state.showRefreshTip}
           onSwitchChange={this.handleSwitchChange}
+          onExpandCollapseAll={this.handleExpandCollapseAll}
           onAddGroup={this.handleAddGroup}
           onOpenSettings={this.showSettingModal}
           onExportBackup={this.handleExportBackup}
@@ -81,7 +83,9 @@ export default class Main extends Component {
             onGroupSwitchChange={this.handleGroupSwitchChange}
             onAddRuleInGroup={this.handleClickAddInGroup}
             onRemoveGroup={this.handleRemoveGroup}
-            onCollapseChange={this.handleCollaseChange}
+            onGroupReorder={this.handleGroupReorder}
+            onGroupExpandedChange={this.handleGroupExpandedChange}
+            onGroupRulesCollapseChange={this.handleGroupRulesCollapseChange}
             onLabelChange={this.handleLabelChange}
             onLimitMethodChange={this.handleLimitMethodChange}
             onFilterTypeChange={this.handleFilterTypeChange}

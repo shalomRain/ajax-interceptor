@@ -95,9 +95,69 @@ export const mainHandlerMethods = {
       id: buildUUID(),
       name: '',
       domain: '',
-      switchOn: true
+      switchOn: true,
+      expanded: true
     })
     this.set('ajaxInterceptor_groups', window.setting.ajaxInterceptor_groups)
+    this.forceUpdate()
+  },
+
+  handleGroupExpandedChange (expanded, groupId) {
+    const g = window.setting.ajaxInterceptor_groups.find((x) => x.id === groupId)
+    if (!g || g.expanded === expanded) return
+    g.expanded = expanded
+    this.set('ajaxInterceptor_groups', window.setting.ajaxInterceptor_groups)
+    this.forceUpdate()
+  },
+
+  isAllExpanded () {
+    const groups = window.setting.ajaxInterceptor_groups || []
+    const rules = window.setting.ajaxInterceptor_rules || []
+    if (!groups.length) return true
+    return groups.every((g) => g.expanded !== false)
+      && rules.every((r) => r.expanded !== false)
+  },
+
+  handleExpandCollapseAll (expandAll) {
+    window.setting.ajaxInterceptor_groups.forEach((g) => {
+      g.expanded = expandAll
+    })
+    window.setting.ajaxInterceptor_rules.forEach((r) => {
+      r.expanded = expandAll
+    })
+    this.set('ajaxInterceptor_groups', window.setting.ajaxInterceptor_groups)
+    this.set('ajaxInterceptor_rules', window.setting.ajaxInterceptor_rules)
+    this.forceUpdate()
+  },
+
+  handleGroupRulesCollapseChange (groupId, activeKeys) {
+    const keys = Array.isArray(activeKeys) ? activeKeys : (activeKeys ? [activeKeys] : [])
+    const keySet = new Set(keys)
+    let changed = false
+    window.setting.ajaxInterceptor_rules.forEach((r) => {
+      if (r.groupId !== groupId) return
+      const nextExpanded = keySet.has(r.key)
+      if ((r.expanded !== false) !== nextExpanded) {
+        r.expanded = nextExpanded
+        changed = true
+      }
+    })
+    if (changed) {
+      this.set('ajaxInterceptor_rules', window.setting.ajaxInterceptor_rules)
+      this.forceUpdate()
+    }
+  },
+
+  handleGroupReorder (fromIndex, toIndex) {
+    if (fromIndex === toIndex) return
+    const groups = [...window.setting.ajaxInterceptor_groups]
+    if (fromIndex < 0 || fromIndex >= groups.length || toIndex < 0 || toIndex >= groups.length) {
+      return
+    }
+    const [moved] = groups.splice(fromIndex, 1)
+    groups.splice(toIndex, 0, moved)
+    window.setting.ajaxInterceptor_groups = groups
+    this.set('ajaxInterceptor_groups', groups)
     this.forceUpdate()
   },
 
@@ -128,6 +188,7 @@ export const mainHandlerMethods = {
       match: '',
       label: '',
       switchOn: true,
+      expanded: true,
       key: buildUUID()
     })
     this.set('ajaxInterceptor_rules', window.setting.ajaxInterceptor_rules)
@@ -168,6 +229,7 @@ export const mainHandlerMethods = {
     const srcLabel = src.label == null ? '' : String(src.label).trim()
     copy.label = srcLabel ? `${srcLabel} 副本` : ''
     copy.switchOn = src.switchOn !== false
+    copy.expanded = src.expanded !== false
     window.setting.ajaxInterceptor_rules = [
       ...window.setting.ajaxInterceptor_rules.slice(0, i + 1),
       copy,
@@ -176,8 +238,6 @@ export const mainHandlerMethods = {
     this.set('ajaxInterceptor_rules', window.setting.ajaxInterceptor_rules)
     this.forceUpdate()
   },
-
-  handleCollaseChange () {},
 
   handleSwitchChange () {
     window.setting.ajaxInterceptor_switchOn = !window.setting.ajaxInterceptor_switchOn

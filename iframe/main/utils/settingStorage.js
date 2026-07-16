@@ -36,7 +36,7 @@ export function ensureGroupsMigrated (raw) {
       key: r.key || buildGroupId()
     }))
     return {
-      out: { ...raw, ajaxInterceptor_groups: [{ id: defaultId, name: '', domain: '', switchOn: true }], ajaxInterceptor_rules: withIds },
+      out: { ...raw, ajaxInterceptor_groups: [{ id: defaultId, name: '', domain: '', switchOn: true, expanded: true }], ajaxInterceptor_rules: withIds },
       needsSave: true
     }
   }
