@@ -3,43 +3,55 @@ English | [简体中文](./README-zh.md)
 <img src="https://github.com/YGYOOO/ajax-interceptor/raw/master/readmeImgs/Ajax_Modifier.png" width="220">   
 
 [![](https://img.shields.io/chrome-web-store/v/nhpjggchkhnlbgdfcbgpdpkifemomkpg.svg?logo=Google%20Chrome&logoColor=white&color=blue&style=flat-square)](https://chrome.google.com/webstore/detail/ajax-interceptor/nhpjggchkhnlbgdfcbgpdpkifemomkpg) 
-[![](https://img.shields.io/chrome-web-store/stars/nhpjggchkhnlbgdfcbgpdpkifemomkpg.svg?logo=Google%20Chrome&logoColor=white&color=blue&style=flat-square)](https://chrome.google.com/webstore/detail/nhpjggchkhnlbgdfcbgpdpkifemomkpg) 
+[![](https://img.shields.io/chrome-web-store/stars/nhpjggchkhnlbgdfcbgpdpkifemomkpg.svg?logo=Google%20Chrome&logoColor=white&color=blue&style=flat-square)](https://chrome.google.com/webstore/detail/ajax-interceptor/nhpjggchkhnlbgdfcbgpdpkifemomkpg) 
 [![](https://img.shields.io/chrome-web-store/users/nhpjggchkhnlbgdfcbgpdpkifemomkpg.svg?logo=Google%20Chrome&logoColor=white&color=blue&style=flat-square)](https://chrome.google.com/webstore/detail/ajax-interceptor/nhpjggchkhnlbgdfcbgpdpkifemomkpg)    
 
 [![](https://img.shields.io/github/followers/YGYOOO.svg?label=Follow&style=social)](https://github.com/YGYOOO)
 [![](https://img.shields.io/badge/Follow%20@卧槽竟然是YGY的微博--brightgreen.svg?logo=Sina%20Weibo&style=social)](https://weibo.com/u/5352731024)
 [![](https://img.shields.io/badge/Follow%20@YGYOOO--brightgreen.svg?logo=Twitter&style=social)](https://twitter.com/YGYOOO)
 
-A chrome extension for modifing any ajax requests or responses easily. You can use it to debug errors or mock data.
+A Chrome extension for modifying any Ajax requests or responses easily. You can use it to debug errors or mock data.
 
 ## Install
-https://chrome.google.com/webstore/detail/ajax-interceptor/nhpjggchkhnlbgdfcbgpdpkifemomkpg   
 
-## Example
-<img src="https://github.com/YGYOOO/ajax-interceptor/raw/master/readmeImgs/screenshot2.png" width="700"> 
+https://chrome.google.com/webstore/detail/ajax-interceptor/nhpjggchkhnlbgdfcbgpdpkifemomkpg
 
-Example video：https://www.youtube.com/watch?v=OL87EPOEVIU
+Or load the unpacked extension from the project root in `chrome://extensions/` (Developer mode).
 
 ## Notes
-1. It is recommended to disable cache(devtools -> network -> disable cache) ![image](https://github.com/YGYOOO/ajax-interceptor/assets/15754991/ea89f065-56da-4c1b-8287-92fe88faeba3) when using this chrome extension.
-2. It is recommended to turn off this extension<img width="202" alt="image" src="https://github.com/YGYOOO/ajax-interceptor/assets/15754991/ba83ac30-39e5-46c6-9c04-2989e9819120"> when you are not using it.
-3. This extension only overrides the response data in the XMLHTTPRequest object as well as the fetch method. The "original" response which you can see in DevTools' "Network" panel will not be changed.
+
+1. It is recommended to disable cache (DevTools → Network → Disable cache) when using this extension.
+2. It is recommended to turn off this extension when you are not using it.
+3. This extension only overrides the response data in the XMLHttpRequest object as well as the fetch method. The "original" response which you can see in DevTools' "Network" panel will not be changed.
 
 ## Release Notes
-version 1.5.3:
-- add request url autofill to fix matching issues
 
-version 1.5.2:
-- fix not intercepting in the onload situation 
+### version 0.0.3
 
-version 1.5.1:
-- add advanced modes for users to encode and modify request headers, request payloads, and responses
-- support responses with the non-200 status
-- add strong tips to remind users of settings related to the devtools
-- optimize the user interface
+- Add global request headers management
+- Improve status label display and global headers editing experience
 
-version 1.4.1:
-- add feature of matched methods  
-- add setting of panel positions, including suspended position and devtools position
-- optimize the user experience for new users
-- fix listener rejected error
+### version 0.0.2
+
+- Add drag-and-drop reordering for rule groups
+- Add expand/collapse for groups and rules, with state persistence
+- Enhance toolbar UI and interactions
+- Add comprehensive usage documentation ([docs.html](./docs.html))
+
+### version 0.0.1
+
+- Add rule groups with per-group name, domain, and switch
+- Support Mock.js templates and ts-mock (TypeScript interface to Mock template)
+- Refactor iframe and content script communication
+- Improve rule management, UI components, and panel layout
+
+### version 0.0.0
+
+Original plugin developed by [YGYOOO](https://github.com/YGYOOO). Core capabilities include:
+
+- Intercept and modify XMLHttpRequest and fetch responses at the JavaScript level
+- Match rules by URL (string or regex) and HTTP method
+- Replace responses with custom JSON or advanced-mode functions (headers, query params, request body, response)
+- Support non-200 status code response modification
+- Single-rule toggle, panel position (floating / DevTools), and configuration import/export
+- Request URL autofill, onload interception fix, and other stability improvements
