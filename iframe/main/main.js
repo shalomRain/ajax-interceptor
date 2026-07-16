@@ -5,6 +5,12 @@ import { bindMainHandlers } from './mainHandlers'
 import MainToolbar from './components/MainToolbar'
 import MainGroups from './components/MainGroups'
 import MainModals from './components/MainModals'
+import {
+  getGlobalHeadersStatusLabel,
+  getMockStatusLabel,
+  isGlobalHeadersActive,
+  normalizeGlobalHeaders
+} from './utils/settingStorage'
 import './Main.less'
 
 export default class Main extends Component {
@@ -29,11 +35,16 @@ export default class Main extends Component {
 
   state = {
     settingModalVisible: false,
+    globalHeadersModalVisible: false,
     imageModalVisible: false,
     infoModalVisible: false,
     positionClass: 'suspend',
     customFunction: {
       panelPosition: 0
+    },
+    globalHeaders: {
+      switchOn: false,
+      list: []
     },
     showRefreshTip: false,
     settingsRevision: 0
@@ -49,7 +60,10 @@ export default class Main extends Component {
   }
 
   render () {
-    const switchOn = window.setting.ajaxInterceptor_switchOn
+    const mockOn = !!window.setting.ajaxInterceptor_switchOn
+    const rules = window.setting.ajaxInterceptor_rules || []
+    const savedGlobalHeaders = normalizeGlobalHeaders(window.setting.ajaxInterceptor_globalHeaders)
+    const globalHeadersOn = isGlobalHeadersActive(savedGlobalHeaders)
     return (
       <div className="ajax-modifier-main">
         <input
@@ -60,21 +74,27 @@ export default class Main extends Component {
           onChange={this.handleImportBackupFile}
         />
         <MainToolbar
-          switchOn={switchOn}
-          expandAllActive={this.isAllExpanded()}
-          showRefreshTip={this.state.showRefreshTip}
-          onSwitchChange={this.handleSwitchChange}
-          onExpandCollapseAll={this.handleExpandCollapseAll}
-          onAddGroup={this.handleAddGroup}
+          mockOn={mockOn}
+          mockLabel={getMockStatusLabel(mockOn, rules)}
+          globalHeadersOn={globalHeadersOn}
+          globalHeadersLabel={getGlobalHeadersStatusLabel(savedGlobalHeaders)}
+          onToggleMock={this.handleSwitchChange}
+          onOpenGlobalHeaders={this.showGlobalHeadersModal}
           onOpenSettings={this.showSettingModal}
           onExportBackup={this.handleExportBackup}
           onImportBackup={this.handleImportBackupClick}
+          onAddGroup={this.handleAddGroup}
         />
-        <div className={switchOn ? 'setting-body' : 'setting-body setting-body-hidden'}>
+        {this.state.showRefreshTip && (
+          <div className="toolbar-refresh-tip">请刷新业务页面使配置生效</div>
+        )}
+        <div className="setting-body">
           <MainGroups
             key={this.state.settingsRevision}
             settingsRevision={this.state.settingsRevision}
-            switchOn={switchOn}
+            switchOn={mockOn}
+            expandAllActive={this.isAllExpanded()}
+            onExpandCollapseAll={this.handleExpandCollapseAll}
             groups={window.setting.ajaxInterceptor_groups}
             rules={window.setting.ajaxInterceptor_rules}
             onGroupNameChange={this.handleGroupNameChange}
@@ -99,13 +119,18 @@ export default class Main extends Component {
         </div>
         <MainModals
           settingModalVisible={this.state.settingModalVisible}
+          globalHeadersModalVisible={this.state.globalHeadersModalVisible}
           infoModalVisible={this.state.infoModalVisible}
           imageModalVisible={this.state.imageModalVisible}
           customFunction={this.state.customFunction}
+          globalHeaders={this.state.globalHeaders}
           positionClass={this.state.positionClass}
           onSettingCancel={this.handleSettingModalCancel}
           onSettingConfirm={this.handleSettingModalConfirm}
           onPositionChange={this.handlePositionChange}
+          onGlobalHeadersChange={this.handleGlobalHeadersChange}
+          onGlobalHeadersCancel={this.handleGlobalHeadersCancel}
+          onGlobalHeadersConfirm={this.handleGlobalHeadersConfirm}
           onShowImageModal={this.showImageModal}
           onImageModalClose={this.handleImageModalClose}
           onInfoModalClose={this.handleInfoModalClose}

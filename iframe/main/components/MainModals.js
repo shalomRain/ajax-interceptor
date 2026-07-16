@@ -1,15 +1,21 @@
 import React from 'react'
 import { Modal, Button, Radio, Icon } from 'antd'
+import GlobalHeadersEditor from './GlobalHeadersEditor'
 
 export default function MainModals ({
   settingModalVisible,
+  globalHeadersModalVisible,
   infoModalVisible,
   imageModalVisible,
   customFunction,
+  globalHeaders,
   positionClass,
   onSettingCancel,
   onSettingConfirm,
   onPositionChange,
+  onGlobalHeadersChange,
+  onGlobalHeadersCancel,
+  onGlobalHeadersConfirm,
   onShowImageModal,
   onImageModalClose,
   onInfoModalClose
@@ -30,7 +36,7 @@ export default function MainModals ({
           </Button>,
         ]}
       >
-        <div>
+        <div className="settings-section">
           <span>Position:</span>
           <Radio.Group
             onChange={onPositionChange}
@@ -47,6 +53,25 @@ export default function MainModals ({
             </Radio>
           </Radio.Group>
         </div>
+      </Modal>
+      <Modal
+        visible={globalHeadersModalVisible}
+        title="Global Request Headers"
+        width="520px"
+        onCancel={onGlobalHeadersCancel}
+        footer={[
+          <Button key="Cancel" onClick={onGlobalHeadersCancel}>
+            Cancel
+          </Button>,
+          <Button key="Submit" type="primary" onClick={onGlobalHeadersConfirm}>
+            Submit
+          </Button>,
+        ]}
+      >
+        <GlobalHeadersEditor
+          value={globalHeaders}
+          onChange={onGlobalHeadersChange}
+        />
       </Modal>
       <Modal
         visible={infoModalVisible}

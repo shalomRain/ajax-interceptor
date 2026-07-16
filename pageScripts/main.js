@@ -5,6 +5,69 @@ let ajax_interceptor_qoweifjqon = {
     ajaxInterceptor_always200On: true, // 默认开启，后期可以扩展成设置项
     ajaxInterceptor_groups: [],
     ajaxInterceptor_rules: [],
+    ajaxInterceptor_globalHeaders: {
+      switchOn: false,
+      list: []
+    },
+  },
+  /** Mock 能力是否开启（原 ajaxInterceptor_switchOn，语义改为仅控制 Mock） */
+  isMockSwitchOn: () => !!ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_switchOn,
+  /** 全局请求头是否应对当前请求生效（独立于 Mock） */
+  shouldApplyGlobalHeaders: () => {
+    const conf = ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_globalHeaders
+    if (!conf || !conf.switchOn) return false
+    const list = conf.list
+    if (!Array.isArray(list) || !list.length) return false
+    return list.some((item) => item && String(item.key || '').trim())
+  },
+  /** Mock 或 Headers 任一开启时挂载 XHR/fetch 劫持 */
+  shouldInstallHooks: () => {
+    return ajax_interceptor_qoweifjqon.isMockSwitchOn()
+      || ajax_interceptor_qoweifjqon.shouldApplyGlobalHeaders()
+  },
+  /** 将配置列表转为 { key: value }，后出现的同名 key 覆盖先出现的 */
+  getGlobalHeadersMap: () => {
+    const conf = ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_globalHeaders || {}
+    const list = Array.isArray(conf.list) ? conf.list : []
+    const map = {}
+    list.forEach((item) => {
+      if (!item) return
+      const key = String(item.key || '').trim()
+      if (!key) return
+      map[key] = item.value != null ? String(item.value) : ''
+    })
+    return map
+  },
+  headersToObject: (headers) => {
+    if (!headers) return {}
+    if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+      const obj = {}
+      headers.forEach((value, key) => {
+        obj[key] = value
+      })
+      return obj
+    }
+    if (Array.isArray(headers)) {
+      const obj = {}
+      headers.forEach((pair) => {
+        if (Array.isArray(pair) && pair.length >= 2) {
+          obj[pair[0]] = pair[1]
+        }
+      })
+      return obj
+    }
+    if (typeof headers === 'object') {
+      return { ...headers }
+    }
+    return {}
+  },
+  /** 页面头 + 全局头（全局覆盖同名 key）；供规则函数继续改写 */
+  mergeWithGlobalHeaders: (baseHeaders) => {
+    const merged = ajax_interceptor_qoweifjqon.headersToObject(baseHeaders)
+    if (ajax_interceptor_qoweifjqon.shouldApplyGlobalHeaders()) {
+      Object.assign(merged, ajax_interceptor_qoweifjqon.getGlobalHeadersMap())
+    }
+    return merged
   },
   isRuleGroupOn: (item) => {
     const groupId = item && item.groupId
@@ -64,11 +127,14 @@ let ajax_interceptor_qoweifjqon = {
       return requestUrl
     }
   },
-  // 获取匹配到的规则项
+  // 获取匹配到的规则项（仅 Mock 开启时参与匹配）
   getMatchedInterface: ({
     thisRequestUrl = '',
     thisMethod = ''
   }) => {
+    if (!ajax_interceptor_qoweifjqon.isMockSwitchOn()) {
+      return undefined
+    }
     return ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_rules.find(item => {
       const {
         filterType = 'normal', limitMethod = 'ALL', switchOn = true, match
@@ -321,7 +387,9 @@ let ajax_interceptor_qoweifjqon = {
             [args[0]]: args[1]
           };
           const matchedInterface = this._matchedInterface;
-          if (!(matchedInterface && matchedInterface.overrideHeadersFunc && ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface))) { // 没有要拦截修改或添加的header
+          const hasRuleHeaderOverride = matchedInterface && matchedInterface.overrideHeadersFunc && ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
+          // 规则 Advanced 改头时延后到 send；仅全局头时页面头仍可立即写入
+          if (!hasRuleHeaderOverride) {
             xhr.setRequestHeader && xhr.setRequestHeader.apply(xhr, args);
           }
         }
@@ -329,19 +397,30 @@ let ajax_interceptor_qoweifjqon = {
       } else if (attr === 'send') {
         this.send = (...args) => {
           const matchedInterface = this._matchedInterface
+          const {
+            overrideHeadersFunc,
+            overridePayloadFunc
+          } = matchedInterface || {}
+          const isAdvanced = matchedInterface && ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
+          const hasRuleHeaderOverride = !!(overrideHeadersFunc && isAdvanced)
+          const applyGlobal = ajax_interceptor_qoweifjqon.shouldApplyGlobalHeaders()
+
+          if (hasRuleHeaderOverride) {
+            // 页面头 + 全局头，再交给规则函数（规则可覆盖同名 key）
+            let headers = ajax_interceptor_qoweifjqon.mergeWithGlobalHeaders(this._headerArgs)
+            headers = ajax_interceptor_qoweifjqon.executeStringFunction(overrideHeadersFunc, headers, 'headers')
+            Object.keys(headers || {}).forEach((key) => {
+              xhr.setRequestHeader && xhr.setRequestHeader.apply(xhr, [key, headers[key]]);
+            })
+          } else if (applyGlobal) {
+            // 页面头已在 setRequestHeader 写入，此处只补全局头
+            const globalMap = ajax_interceptor_qoweifjqon.getGlobalHeadersMap()
+            Object.keys(globalMap).forEach((key) => {
+              xhr.setRequestHeader && xhr.setRequestHeader.apply(xhr, [key, globalMap[key]]);
+            })
+          }
+
           if (matchedInterface) {
-            // modify headers
-            const {
-              overrideHeadersFunc,
-              overridePayloadFunc
-            } = matchedInterface
-            const isAdvanced = ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
-            if (overrideHeadersFunc && isAdvanced) {
-              const headers = ajax_interceptor_qoweifjqon.executeStringFunction(overrideHeadersFunc, this._headerArgs, 'headers')
-              Object.keys(headers).forEach((key) => {
-                xhr.setRequestHeader && xhr.setRequestHeader.apply(xhr, [key, headers[key]]);
-              })
-            }
             // modify not GET payload
             const [method] = this._openArgs
             if (overridePayloadFunc && isAdvanced && method !== 'GET') {
@@ -459,6 +538,27 @@ let ajax_interceptor_qoweifjqon = {
       thisRequestUrl: ajax_interceptor_qoweifjqon.getCompleteUrl(inputUrl),
       thisMethod: data && data.method
     })
+
+    // 确保有 init 对象以便写入 headers（仅 string input 时）
+    if (typeof requestUrl === 'string' && !args[1]) {
+      args[1] = {}
+      data = args[1]
+    }
+
+    const applyGlobal = ajax_interceptor_qoweifjqon.shouldApplyGlobalHeaders()
+
+    const writeFetchHeaders = (headers) => {
+      if (!headers) return
+      const initIsRequest = typeof Request !== 'undefined' && args[1] instanceof Request
+      if (args[1] != null && typeof args[1] === 'object' && !initIsRequest) {
+        args[1].headers = headers
+      } else if (typeof Request !== 'undefined' && args[0] instanceof Request) {
+        args[0] = new Request(args[0], { headers })
+      } else if (typeof args[0] === 'string') {
+        args[1] = Object.assign({}, args[1] || {}, { headers })
+      }
+    }
+
     if (matchedInterface && args) {
       if (bodyData && isReadableStream(data.body)) {
         bodyData = await readReadableStream(bodyData)
@@ -468,9 +568,15 @@ let ajax_interceptor_qoweifjqon = {
         overridePayloadFunc
       } = matchedInterface;
       const isAdvancedFetch = ajax_interceptor_qoweifjqon.isAdvancedRule(matchedInterface)
-      if (overrideHeadersFunc && isAdvancedFetch && data) {
-        const headers = ajax_interceptor_qoweifjqon.executeStringFunction(overrideHeadersFunc, this._headerArgs, 'headers')
-        args[1].headers = headers
+      if (data) {
+        const baseHeaders = ajax_interceptor_qoweifjqon.headersToObject(data.headers)
+        let headers = ajax_interceptor_qoweifjqon.mergeWithGlobalHeaders(baseHeaders)
+        if (overrideHeadersFunc && isAdvancedFetch) {
+          headers = ajax_interceptor_qoweifjqon.executeStringFunction(overrideHeadersFunc, headers, 'headers')
+        }
+        if (applyGlobal || (overrideHeadersFunc && isAdvancedFetch)) {
+          writeFetchHeaders(headers)
+        }
       }
       if (overridePayloadFunc && isAdvancedFetch && requestUrl && data) {
         const {
@@ -497,6 +603,9 @@ let ajax_interceptor_qoweifjqon = {
           }
         }
       }
+    } else if (applyGlobal) {
+      const headerSource = (data && data.headers) || (typeof requestUrl === 'object' && requestUrl && requestUrl.headers)
+      writeFetchHeaders(ajax_interceptor_qoweifjqon.mergeWithGlobalHeaders(headerSource))
     }
     return ajax_interceptor_qoweifjqon.originalFetch(...args).then(async (response) => {
       if (matchedInterface && (matchedInterface.overrideTxt || matchedInterface.overrideResponseFunc)) {
@@ -644,7 +753,7 @@ window.addEventListener("message", function (event) {
     ajax_interceptor_qoweifjqon.settings[data.key] = data.value
   }
 
-  if (ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_switchOn) {
+  if (ajax_interceptor_qoweifjqon.shouldInstallHooks()) {
     // https://github.com/YGYOOO/ajax-interceptor/issues/78
     // https://github.com/YGYOOO/ajax-interceptor/issues/93
     for (const k in ajax_interceptor_qoweifjqon.originalXHR) {

@@ -189,6 +189,8 @@ export default function MainGroups ({
   switchOn,
   groups,
   rules,
+  expandAllActive,
+  onExpandCollapseAll,
   onGroupNameChange,
   onGroupDomainChange,
   onFlushGroupsToStorage,
@@ -265,6 +267,19 @@ export default function MainGroups ({
 
   return (
     <div className="groups-list" ref={listRef}>
+      <div className="groups-view-actions">
+        <button
+          type="button"
+          className="groups-expand-toggle"
+          title={expandAllActive ? '收起所有组与规则' : '展开所有组与规则'}
+          onClick={() => onExpandCollapseAll(!expandAllActive)}
+        >
+          {expandAllActive ? '收起全部' : '展开全部'}
+        </button>
+        {!switchOn && (
+          <span className="groups-mock-hint danger">Mock 已关闭：规则仍可编辑，但不会改写响应</span>
+        )}
+      </div>
       {groups.map((group, index) => {
         const groupDisabled = group.switchOn === false
         const groupRules = rules
@@ -300,10 +315,7 @@ export default function MainGroups ({
                 }
               }}
               expandIcon={() => null}
-              className={[
-                'group-outer-collapse',
-                switchOn ? 'collapse' : 'collapse collapse-hidden'
-              ].join(' ')}
+              className="group-outer-collapse collapse"
             >
               <Panel
                 key={group.id}

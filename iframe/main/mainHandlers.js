@@ -7,6 +7,7 @@ import {
   buildBackupPayload,
   parseBackupFile,
   ensureGroupsMigrated,
+  normalizeGlobalHeaders,
   pickSettingData
 } from './utils/settingStorage'
 
@@ -248,7 +249,7 @@ export const mainHandlerMethods = {
   showSettingModal () {
     this.setState({
       settingModalVisible: true,
-      customFunction: window.setting.customFunction
+      customFunction: { ...(window.setting.customFunction || {}) }
     })
   },
 
@@ -267,6 +268,30 @@ export const mainHandlerMethods = {
         panelPosition: e.target.value
       }
     })
+  },
+
+  showGlobalHeadersModal () {
+    this.setState({
+      globalHeadersModalVisible: true,
+      globalHeaders: normalizeGlobalHeaders(window.setting.ajaxInterceptor_globalHeaders)
+    })
+  },
+
+  handleGlobalHeadersChange (next) {
+    this.setState({
+      globalHeaders: normalizeGlobalHeaders(next)
+    })
+  },
+
+  handleGlobalHeadersCancel () {
+    this.setState({ globalHeadersModalVisible: false })
+  },
+
+  handleGlobalHeadersConfirm () {
+    const globalHeaders = normalizeGlobalHeaders(this.state.globalHeaders)
+    window.setting.ajaxInterceptor_globalHeaders = globalHeaders
+    this.set('ajaxInterceptor_globalHeaders', globalHeaders)
+    this.setState({ globalHeadersModalVisible: false })
   },
 
   showImageModal (pClass) {
@@ -303,6 +328,7 @@ export const mainHandlerMethods = {
       })
       this.setState({
         customFunction: out.customFunction,
+        globalHeaders: normalizeGlobalHeaders(out.ajaxInterceptor_globalHeaders),
         showRefreshTip: true,
         settingsRevision: (this.state.settingsRevision || 0) + 1
       }, () => {

@@ -1,38 +1,37 @@
 import React from 'react'
-import { Switch, Button, Icon } from 'antd'
+import { Button, Icon } from 'antd'
 
 export default function MainToolbar ({
-  switchOn,
-  expandAllActive,
-  showRefreshTip,
-  onSwitchChange,
-  onExpandCollapseAll,
-  onAddGroup,
+  mockOn,
+  mockLabel,
+  globalHeadersOn,
+  globalHeadersLabel,
+  onToggleMock,
+  onOpenGlobalHeaders,
   onOpenSettings,
   onExportBackup,
-  onImportBackup
+  onImportBackup,
+  onAddGroup
 }) {
   return (
     <div className="main-toolbar-inner">
       <div className="main-toolbar-left">
-        <span
-          className="toolbar-expand-label"
-          title={expandAllActive ? '收起所有组与规则' : '展开所有组与规则'}
+        <button
+          type="button"
+          className={`toolbar-capability-status${mockOn ? ' is-on' : ''}`}
+          title="Mock：点击开关。开启后按规则改写匹配到的接口响应"
+          onClick={onToggleMock}
         >
-          全部展开
-        </span>
-        <Switch
-          size="small"
-          checked={expandAllActive}
-          onChange={onExpandCollapseAll}
-          disabled={!switchOn}
-          title={expandAllActive ? '收起所有组与规则' : '展开所有组与规则'}
-        />
-        <Switch
-          style={{ marginLeft: 6 }}
-          checked={switchOn}
-          onChange={onSwitchChange}
-        />
+          {mockLabel}
+        </button>
+        <button
+          type="button"
+          className={`toolbar-capability-status${globalHeadersOn ? ' is-on' : ''}`}
+          title="全局请求头：点击配置。仅在开启且有有效条目时生效"
+          onClick={onOpenGlobalHeaders}
+        >
+          {globalHeadersLabel}
+        </button>
       </div>
       <div className="main-toolbar-right">
         <Button
@@ -43,7 +42,6 @@ export default function MainToolbar ({
           title="新建组"
           onClick={onAddGroup}
           style={{ float: 'right', marginRight: 10, marginTop: 1 }}
-          disabled={!switchOn}
         />
         <Icon
           type="upload"

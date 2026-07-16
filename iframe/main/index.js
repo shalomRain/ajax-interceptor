@@ -3,12 +3,18 @@ import ReactDOM from 'react-dom'
 
 import Main from './Main'
 import { getChromeStorageLocal } from './extensionApi'
-import { DEFAULT_SETTING, ensureGroupsMigrated, STORAGE_KEYS } from './utils/settingStorage'
+import {
+  DEFAULT_SETTING,
+  ensureGroupsMigrated,
+  normalizeGlobalHeaders,
+  STORAGE_KEYS
+} from './utils/settingStorage'
 
 const storageLocal = getChromeStorageLocal()
 if (storageLocal) {
   storageLocal.get(STORAGE_KEYS, (result) => {
     const merged = { ...DEFAULT_SETTING, ...result }
+    merged.ajaxInterceptor_globalHeaders = normalizeGlobalHeaders(merged.ajaxInterceptor_globalHeaders)
     const { out, needsSave } = ensureGroupsMigrated(merged)
     window.setting = out
     if (needsSave) {
@@ -21,7 +27,11 @@ if (storageLocal) {
     )
   })
 } else {
-  const { out } = ensureGroupsMigrated(DEFAULT_SETTING)
+  const merged = {
+    ...DEFAULT_SETTING,
+    ajaxInterceptor_globalHeaders: normalizeGlobalHeaders(DEFAULT_SETTING.ajaxInterceptor_globalHeaders)
+  }
+  const { out } = ensureGroupsMigrated(merged)
   window.setting = out
   // 测试环境
   ReactDOM.render(
