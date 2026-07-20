@@ -20,9 +20,7 @@ chrome.scripting.getRegisteredContentScripts({ ids: ["testing-scripts-gen"] },
 )
 
 chrome.action.onClicked.addListener(function (tab) {
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    handleContentSend(tabs[0].id, "toggle")
-  })
+  toggleFloatingPanel(tab && tab.id)
 })
 
 // 页面关闭，移除id
@@ -30,15 +28,55 @@ chrome.tabs.onRemoved.addListener(function (tabId) {
   contentLoadedIds = contentLoadedIds.filter(id => id !== tabId)
 })
 
+/** 点击图标切换悬浮面板；受限页（chrome:// 等）无法注入时给出提示 */
+function toggleFloatingPanel (tabId) {
+  if (!tabId) {
+    showRestrictedPageTip()
+    return
+  }
+  const sendToggle = () => chrome.tabs.sendMessage(tabId, 'toggle').catch(() => {})
+  if (contentLoadedIds.includes(tabId)) {
+    sendToggle()
+    return
+  }
+  chrome.scripting.executeScript({
+    target: { tabId, allFrames: true },
+    files: ['content.js']
+  }).then(() => {
+    // content.js 里 insertIframe 依赖 storage 异步，稍后再发 toggle
+    setTimeout(sendToggle, 80)
+  }).catch(() => showRestrictedPageTip())
+}
+
+/** 临时挂上提示 popup 并尝试立刻打开；展示后由 popupRestricted.js 清回空 popup */
+function showRestrictedPageTip () {
+  chrome.action.setPopup({ popup: 'popupRestricted.html' }, () => {
+    if (chrome.action.openPopup) {
+      chrome.action.openPopup().catch(() => {
+        // 部分环境不支持 openPopup：本次无弹窗，下次点击会直接打开提示 popup
+      })
+    }
+  })
+}
+
+function clearRestrictedTipPopup () {
+  // 仅悬浮模式需要清空；DevTools 模式仍应保持 popupDev.html
+  if (!lastPanelPosition) {
+    chrome.action.setPopup({ popup: '' })
+  }
+}
+
 function handleContentSend(tabId, params = null) {
   if (contentLoadedIds.includes(tabId)) {
-    chrome.tabs.sendMessage(tabId, params)
+    chrome.tabs.sendMessage(tabId, params).catch(() => {})
   } else {
     chrome.scripting.executeScript({
       target: { tabId, allFrames: true },
       files: ['content.js']
     }).then(() => {
-      chrome.tabs.sendMessage(tabId, params)
+      chrome.tabs.sendMessage(tabId, params).catch(() => {})
+    }).catch(() => {
+      // chrome:// 等受限页面无法注入 content script，忽略即可
     })
   }
 }
@@ -73,6 +111,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   if (msg && msg.type === 'ajaxInterceptor' && msg.to === 'background' && msg.action === 'mockPreviewResult') {
     chrome.runtime.sendMessage(chrome.runtime.id, { ...msg, to: 'iframe' })
+    return
+  }
+
+  if (msg && msg.type === 'ajaxInterceptor' && msg.to === 'background' && msg.action === 'clearRestrictedTipPopup') {
+    clearRestrictedTipPopup()
     return
   }
 
@@ -150,6 +193,14 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 })
 
 updateActionIcon()
+
+// 扩展重载 / SW 唤醒后立即按存储校准 popup，避免短暂落到 manifest 默认弹窗
+//（否则第一次点击会以 action popup 打开完整 UI，高度被裁切）
+chrome.storage.local.get(['customFunction'], (result) => {
+  const curPanelPosition = !!result.customFunction?.panelPosition
+  lastPanelPosition = curPanelPosition
+  chrome.action.setPopup({ popup: curPanelPosition ? 'popupDev.html' : '' })
+})
 
 function setPopup(curPanelPosition = false) {
   // panelPosition - 0:页面悬浮面板, 1:devTools

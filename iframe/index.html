@@ -7,15 +7,14 @@
   <title>Ajax Modifier</title>
   <style>
     /**
-     * 扩展 action 弹窗：必须为 html/body 给出明确尺寸，否则子元素 height:100% 无法计算，
-     * Chrome 会把弹窗压成一条细缝（约几十像素高）。
-     * 宽度与本地 webpack 调试时主面板一致（800px）。
+     * 悬浮 iframe / DevTools panel 共用此页。
+     * 宽度与 Main.less 中 max-width:800px 一致；高度交给外层容器（content.js 设 100vh）。
      */
     html, body {
       margin: 0;
       padding: 0;
-      width: 800px;
-      min-width: 800px;
+      width: 100%;
+      height: 100%;
       box-sizing: border-box;
       overflow: auto;
     }

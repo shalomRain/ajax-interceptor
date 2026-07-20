@@ -30,7 +30,6 @@
     }
   ],
   "action": {
-    "default_popup": "iframe/index.html",
     "default_title": "点击打开面板"
   },
   "content_security_policy": {},
