@@ -268,17 +268,20 @@ export default function MainGroups ({
   return (
     <div className="groups-list" ref={listRef}>
       <div className="groups-view-actions">
+        <div className="groups-view-actions-left">
+          {!switchOn && (
+            <span className="groups-mock-hint danger">Mock 已关闭：规则仍可编辑，但不会改写响应</span>
+          )}
+        </div>
         <button
           type="button"
           className="groups-expand-toggle"
           title={expandAllActive ? '收起所有组与规则' : '展开所有组与规则'}
+          aria-label={expandAllActive ? '收起全部' : '展开全部'}
           onClick={() => onExpandCollapseAll(!expandAllActive)}
         >
-          {expandAllActive ? '收起全部' : '展开全部'}
+          <Icon type={expandAllActive ? 'menu-fold' : 'menu-unfold'} />
         </button>
-        {!switchOn && (
-          <span className="groups-mock-hint danger">Mock 已关闭：规则仍可编辑，但不会改写响应</span>
-        )}
       </div>
       {groups.map((group, index) => {
         const groupDisabled = group.switchOn === false
