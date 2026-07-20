@@ -1,5 +1,5 @@
 import React from 'react'
-import { Input, Button, Switch, Icon } from 'antd'
+import { Input, Button, Icon } from 'antd'
 import { buildUUID } from '../utils/mainHelpers'
 
 export default function GlobalHeadersEditor ({ value, onChange }) {
@@ -8,10 +8,6 @@ export default function GlobalHeadersEditor ({ value, onChange }) {
 
   const emit = (next) => {
     onChange && onChange(next)
-  }
-
-  const handleSwitch = (checked) => {
-    emit({ ...value, switchOn: checked, list })
   }
 
   const handleFieldChange = (index, field, nextValue) => {
@@ -39,18 +35,8 @@ export default function GlobalHeadersEditor ({ value, onChange }) {
 
   return (
     <div className="global-headers-editor">
-      <div className="global-headers-editor-title">
-        <span>Global Request Headers</span>
-        <Switch
-          size="small"
-          checked={switchOn}
-          onChange={handleSwitch}
-          checkedChildren="ON"
-          unCheckedChildren="OFF"
-        />
-      </div>
       <div className="global-headers-editor-hint">
-        Independent of Mock. When enabled, headers apply to all XHR/fetch requests. Per-rule Advanced headers can override the same keys.
+        Independent of Mock. When enabled from the toolbar, headers apply to all XHR/fetch requests. Per-rule Advanced headers can override the same keys.
       </div>
       {list.map((row, index) => (
         <div className="global-headers-row" key={row.id || index}>

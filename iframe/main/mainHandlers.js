@@ -246,6 +246,14 @@ export const mainHandlerMethods = {
     this.forceUpdate()
   },
 
+  handleGlobalHeadersSwitchChange () {
+    const current = normalizeGlobalHeaders(window.setting.ajaxInterceptor_globalHeaders)
+    const globalHeaders = { ...current, switchOn: !current.switchOn }
+    window.setting.ajaxInterceptor_globalHeaders = globalHeaders
+    this.set('ajaxInterceptor_globalHeaders', globalHeaders)
+    this.forceUpdate()
+  },
+
   showSettingModal () {
     this.setState({
       settingModalVisible: true,

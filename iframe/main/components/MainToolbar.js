@@ -1,5 +1,35 @@
 import React from 'react'
-import { Button, Icon } from 'antd'
+import { Icon } from 'antd'
+
+function CapabilityButton ({
+  isOn,
+  label,
+  statusTitle,
+  addTitle,
+  onToggle,
+  onAdd
+}) {
+  return (
+    <div className={`toolbar-capability${isOn ? ' is-on' : ''}`}>
+      <button
+        type="button"
+        className="toolbar-capability-add"
+        title={addTitle}
+        onClick={onAdd}
+      >
+        <Icon type="plus" />
+      </button>
+      <button
+        type="button"
+        className="toolbar-capability-status"
+        title={statusTitle}
+        onClick={onToggle}
+      >
+        {label}
+      </button>
+    </div>
+  )
+}
 
 export default function MainToolbar ({
   mockOn,
@@ -7,58 +37,50 @@ export default function MainToolbar ({
   globalHeadersOn,
   globalHeadersLabel,
   onToggleMock,
+  onAddGroup,
+  onToggleGlobalHeaders,
   onOpenGlobalHeaders,
   onOpenSettings,
   onExportBackup,
-  onImportBackup,
-  onAddGroup
+  onImportBackup
 }) {
   return (
     <div className="main-toolbar-inner">
       <div className="main-toolbar-left">
-        <button
-          type="button"
-          className={`toolbar-capability-status${mockOn ? ' is-on' : ''}`}
-          title="Mock：点击开关。开启后按规则改写匹配到的接口响应"
-          onClick={onToggleMock}
-        >
-          {mockLabel}
-        </button>
-        <button
-          type="button"
-          className={`toolbar-capability-status${globalHeadersOn ? ' is-on' : ''}`}
-          title="全局请求头：点击配置。仅在开启且有有效条目时生效"
-          onClick={onOpenGlobalHeaders}
-        >
-          {globalHeadersLabel}
-        </button>
+        <CapabilityButton
+          isOn={mockOn}
+          label={mockLabel}
+          statusTitle="Mock：点击开关。开启后按规则改写匹配到的接口响应"
+          addTitle="新建组"
+          onToggle={onToggleMock}
+          onAdd={onAddGroup}
+        />
+        <CapabilityButton
+          isOn={globalHeadersOn}
+          label={globalHeadersLabel}
+          statusTitle="全局请求头：点击开关。开启后对所有 XHR/fetch 生效"
+          addTitle="配置全局请求头"
+          onToggle={onToggleGlobalHeaders}
+          onAdd={onOpenGlobalHeaders}
+        />
       </div>
       <div className="main-toolbar-right">
-        <Button
-          type="primary"
-          shape="circle"
-          icon="plus"
-          size="small"
-          title="新建组"
-          onClick={onAddGroup}
-          style={{ float: 'right', marginRight: 10, marginTop: 1 }}
-        />
         <Icon
           type="upload"
           title="导出备份"
-          style={{ fontSize: '20px', color: '#1890ff', cursor: 'pointer', float: 'right' }}
+          style={{ fontSize: '20px', color: '#1890ff', cursor: 'pointer' }}
           onClick={onExportBackup}
         />
         <Icon
           type="download"
           title="导入备份"
-          style={{ fontSize: '20px', color: '#1890ff', cursor: 'pointer', float: 'right' }}
+          style={{ fontSize: '20px', color: '#1890ff', cursor: 'pointer' }}
           onClick={onImportBackup}
         />
         <Icon
           type="setting"
           title="设置"
-          style={{ fontSize: '22px', color: '#1890ff', cursor: 'pointer', float: 'right' }}
+          style={{ fontSize: '22px', color: '#1890ff', cursor: 'pointer' }}
           onClick={onOpenSettings}
         />
       </div>

@@ -79,11 +79,12 @@ export default class Main extends Component {
           globalHeadersOn={globalHeadersOn}
           globalHeadersLabel={getGlobalHeadersStatusLabel(savedGlobalHeaders)}
           onToggleMock={this.handleSwitchChange}
+          onAddGroup={this.handleAddGroup}
+          onToggleGlobalHeaders={this.handleGlobalHeadersSwitchChange}
           onOpenGlobalHeaders={this.showGlobalHeadersModal}
           onOpenSettings={this.showSettingModal}
           onExportBackup={this.handleExportBackup}
           onImportBackup={this.handleImportBackupClick}
-          onAddGroup={this.handleAddGroup}
         />
         {this.state.showRefreshTip && (
           <div className="toolbar-refresh-tip">请刷新业务页面使配置生效</div>

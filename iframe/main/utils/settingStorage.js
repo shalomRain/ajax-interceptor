@@ -44,7 +44,7 @@ export function countValidGlobalHeaders (raw) {
   return list.filter((item) => String(item.key || '').trim()).length
 }
 
-/** 全局头开关是否打开（用于工具栏高亮，与弹窗内开关一致） */
+/** 全局头开关是否打开（用于工具栏高亮，与工具栏开关一致） */
 export function isGlobalHeadersActive (raw) {
   return !!normalizeGlobalHeaders(raw).switchOn
 }
