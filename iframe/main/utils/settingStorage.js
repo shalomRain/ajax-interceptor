@@ -56,15 +56,27 @@ export function getGlobalHeadersStatusLabel (raw) {
   return `Headers · ${countValidGlobalHeaders(conf)}`
 }
 
-/** 已开启的 Mock 规则条数 */
-export function countEnabledMockRules (rules) {
-  return (rules || []).filter((r) => r && r.switchOn !== false).length
+/** 规则所属组是否开启（与 pageScripts isRuleGroupOn 一致） */
+export function isRuleGroupOn (rule, groups) {
+  const list = groups || []
+  const groupId = rule && rule.groupId
+  if (!groupId) {
+    return !list.length || (list[0] && list[0].switchOn !== false)
+  }
+  const g = list.find((x) => x && x.id === groupId)
+  if (!g) return true
+  return g.switchOn !== false
+}
+
+/** 实际生效的 Mock 规则条数（规则开关开且所属组未关闭） */
+export function countEnabledMockRules (rules, groups) {
+  return (rules || []).filter((r) => r && r.switchOn !== false && isRuleGroupOn(r, groups)).length
 }
 
 /** 工具栏 Mock 状态文案 */
-export function getMockStatusLabel (switchOn, rules) {
+export function getMockStatusLabel (switchOn, rules, groups) {
   if (!switchOn) return 'Mock · OFF'
-  return `Mock · ${countEnabledMockRules(rules)}`
+  return `Mock · ${countEnabledMockRules(rules, groups)}`
 }
 
 const buildGroupId = () => {

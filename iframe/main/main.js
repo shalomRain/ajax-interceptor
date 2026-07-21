@@ -62,6 +62,7 @@ export default class Main extends Component {
   render () {
     const mockOn = !!window.setting.ajaxInterceptor_switchOn
     const rules = window.setting.ajaxInterceptor_rules || []
+    const groups = window.setting.ajaxInterceptor_groups || []
     const savedGlobalHeaders = normalizeGlobalHeaders(window.setting.ajaxInterceptor_globalHeaders)
     const globalHeadersOn = isGlobalHeadersActive(savedGlobalHeaders)
     return (
@@ -75,7 +76,7 @@ export default class Main extends Component {
         />
         <MainToolbar
           mockOn={mockOn}
-          mockLabel={getMockStatusLabel(mockOn, rules)}
+          mockLabel={getMockStatusLabel(mockOn, rules, groups)}
           globalHeadersOn={globalHeadersOn}
           globalHeadersLabel={getGlobalHeadersStatusLabel(savedGlobalHeaders)}
           onToggleMock={this.handleSwitchChange}
