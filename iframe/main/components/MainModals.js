@@ -56,8 +56,8 @@ export default function MainModals ({
       </Modal>
       <Modal
         visible={globalHeadersModalVisible}
-        title="Global Request Headers"
-        width="520px"
+        title="Request Headers"
+        width="640px"
         onCancel={onGlobalHeadersCancel}
         footer={[
           <Button key="Cancel" onClick={onGlobalHeadersCancel}>

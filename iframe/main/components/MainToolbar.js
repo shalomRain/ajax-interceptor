@@ -58,8 +58,8 @@ export default function MainToolbar ({
         <CapabilityButton
           isOn={globalHeadersOn}
           label={globalHeadersLabel}
-          statusTitle="全局请求头：点击开关。开启后对所有 XHR/fetch 生效"
-          addTitle="配置全局请求头"
+          statusTitle="请求头：点击开关。可按域名或全局注入请求头"
+          addTitle="配置请求头"
           onToggle={onToggleGlobalHeaders}
           onAdd={onOpenGlobalHeaders}
         />

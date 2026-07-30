@@ -11,37 +11,112 @@ export const BACKUP_VERSION = 1
 
 export const DEFAULT_GLOBAL_HEADERS = {
   switchOn: false,
-  list: []
+  scopes: []
 }
 
 export const DEFAULT_SETTING = {
   ajaxInterceptor_switchOn: false,
   ajaxInterceptor_groups: [],
   ajaxInterceptor_rules: [],
-  ajaxInterceptor_globalHeaders: { ...DEFAULT_GLOBAL_HEADERS, list: [] },
+  ajaxInterceptor_globalHeaders: { ...DEFAULT_GLOBAL_HEADERS, scopes: [] },
   customFunction: {
     panelPosition: 0
   }
 }
 
-/** 规范化全局请求头配置 */
-export function normalizeGlobalHeaders (raw) {
-  const base = raw && typeof raw === 'object' ? raw : {}
-  const list = Array.isArray(base.list) ? base.list : []
+const genHeaderId = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`
+
+/** 规范化域名（支持粘贴完整 URL → host） */
+export function normalizeHeaderDomain (domain) {
+  if (domain == null) return ''
+  let d = String(domain).trim()
+  if (!d) return ''
+  try {
+    if (/^https?:\/\//i.test(d)) {
+      return new URL(d).host.toLowerCase()
+    }
+  } catch (e) {}
+  return d.split('/')[0].split('?')[0].toLowerCase()
+}
+
+function normalizeHeaderEntry (item) {
   return {
-    switchOn: !!base.switchOn,
-    list: list.map((item) => ({
-      id: (item && item.id) || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      key: item && item.key != null ? String(item.key) : '',
-      value: item && item.value != null ? String(item.value) : ''
-    }))
+    id: (item && item.id) || genHeaderId(),
+    key: item && item.key != null ? String(item.key) : '',
+    value: item && item.value != null ? String(item.value) : ''
   }
 }
 
-/** 有效（key 非空）的全局请求头条数 */
+function normalizeHeaderScope (scope) {
+  const headers = Array.isArray(scope && scope.headers)
+    ? scope.headers.map(normalizeHeaderEntry)
+    : []
+  return {
+    id: (scope && scope.id) || genHeaderId(),
+    domain: normalizeHeaderDomain(scope && scope.domain),
+    headers
+  }
+}
+
+/** 旧版扁平 list[{domain,key,value}] → 按域名聚合成 scopes */
+function migrateFlatListToScopes (list) {
+  const order = []
+  const byDomain = new Map()
+  ;(list || []).forEach((item) => {
+    if (!item) return
+    const domain = normalizeHeaderDomain(item.domain)
+    if (!byDomain.has(domain)) {
+      byDomain.set(domain, [])
+      order.push(domain)
+    }
+    byDomain.get(domain).push(normalizeHeaderEntry(item))
+  })
+  return order.map((domain) => ({
+    id: genHeaderId(),
+    domain,
+    headers: byDomain.get(domain)
+  }))
+}
+
+/**
+ * 规范化请求头配置
+ * 新结构：scopes[{ id, domain, headers:[{id,key,value}] }]
+ * 兼容：旧扁平 list[{domain,key,value}]；无 domain 视为全局
+ */
+export function normalizeGlobalHeaders (raw) {
+  const base = raw && typeof raw === 'object' ? raw : {}
+  let scopes
+  if (Array.isArray(base.scopes)) {
+    scopes = base.scopes.map(normalizeHeaderScope)
+  } else if (Array.isArray(base.list) && base.list.length) {
+    const first = base.list[0]
+    if (first && Array.isArray(first.headers)) {
+      scopes = base.list.map(normalizeHeaderScope)
+    } else {
+      scopes = migrateFlatListToScopes(base.list)
+    }
+  } else {
+    scopes = []
+  }
+  return {
+    switchOn: !!base.switchOn,
+    scopes
+  }
+}
+
+/** 是否仍为旧结构，需要写回 scopes（面板加载时迁移） */
+export function needsGlobalHeadersMigrate (raw) {
+  if (!raw || typeof raw !== 'object') return false
+  if (Array.isArray(raw.scopes)) return false
+  return Object.prototype.hasOwnProperty.call(raw, 'list')
+}
+
+/** 有效（key 非空）的请求头条数 */
 export function countValidGlobalHeaders (raw) {
-  const { list } = normalizeGlobalHeaders(raw)
-  return list.filter((item) => String(item.key || '').trim()).length
+  const { scopes } = normalizeGlobalHeaders(raw)
+  return scopes.reduce((count, scope) => (
+    count + (scope.headers || []).filter((item) => String(item.key || '').trim()).length
+  ), 0)
 }
 
 /** 全局头开关是否打开（用于工具栏高亮，与工具栏开关一致） */

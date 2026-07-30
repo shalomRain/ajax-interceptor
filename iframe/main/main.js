@@ -44,7 +44,7 @@ export default class Main extends Component {
     },
     globalHeaders: {
       switchOn: false,
-      list: []
+      scopes: []
     },
     showRefreshTip: false,
     settingsRevision: 0
