@@ -1,0 +1,14 @@
+#!/bin/sh
+# Auto-bump extension build version on every commit.
+# Display form: 1.5.7(N) via version_name; Chrome version: 1.5.7.N
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 1
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-commit: node is required to bump extension version" >&2
+  exit 1
+fi
+
+node scripts/bump-build-version.js || exit 1
+git add manifest.json
