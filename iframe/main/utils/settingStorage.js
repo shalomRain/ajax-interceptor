@@ -3,6 +3,7 @@ export const STORAGE_KEYS = [
   'ajaxInterceptor_groups',
   'ajaxInterceptor_rules',
   'ajaxInterceptor_globalHeaders',
+  'ajaxInterceptor_slowNetwork',
   'customFunction'
 ]
 
@@ -14,11 +15,18 @@ export const DEFAULT_GLOBAL_HEADERS = {
   scopes: []
 }
 
+/** 全局慢网：关闭=正常；开启=在 mock 改写响应前额外延迟 delayMs */
+export const DEFAULT_SLOW_NETWORK = {
+  switchOn: false,
+  delayMs: 3000
+}
+
 export const DEFAULT_SETTING = {
   ajaxInterceptor_switchOn: false,
   ajaxInterceptor_groups: [],
   ajaxInterceptor_rules: [],
   ajaxInterceptor_globalHeaders: { ...DEFAULT_GLOBAL_HEADERS, scopes: [] },
+  ajaxInterceptor_slowNetwork: { ...DEFAULT_SLOW_NETWORK },
   customFunction: {
     panelPosition: 0
   }
@@ -154,6 +162,41 @@ export function getMockStatusLabel (switchOn, rules, groups) {
   return `Mock · ${countEnabledMockRules(rules, groups)}`
 }
 
+/** 规范化慢网配置 */
+export function normalizeSlowNetwork (raw) {
+  const src = raw && typeof raw === 'object' ? raw : {}
+  const delayMs = Number(src.delayMs)
+  return {
+    switchOn: !!src.switchOn,
+    delayMs: Number.isFinite(delayMs) && delayMs > 0
+      ? Math.min(Math.round(delayMs), 60000)
+      : DEFAULT_SLOW_NETWORK.delayMs
+  }
+}
+
+/**
+ * 解析生效延迟：单接口 > 组/域名 > 全局
+ * 下级开启时使用全局 delayMs；均未开启则 0
+ */
+export function resolveSlowNetworkDelayMs (rule, group, globalConf) {
+  const global = normalizeSlowNetwork(globalConf)
+  const delayMs = global.delayMs
+  const ruleOn = !!(rule && rule.slowNetwork && rule.slowNetwork.switchOn)
+  if (ruleOn) return delayMs
+  const groupOn = !!(group && group.slowNetwork && group.slowNetwork.switchOn)
+  if (groupOn) return delayMs
+  if (global.switchOn) return delayMs
+  return 0
+}
+
+/** 工具栏慢网状态文案 */
+export function getSlowNetworkStatusLabel (raw) {
+  const conf = normalizeSlowNetwork(raw)
+  if (!conf.switchOn) return '慢网 · OFF'
+  const sec = Math.max(1, Math.round(conf.delayMs / 1000))
+  return `慢网 · ${sec}s`
+}
+
 const buildGroupId = () => {
   const dt = new Date().getTime()
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -248,8 +291,12 @@ export function parseBackupFile (raw) {
   if (picked.ajaxInterceptor_globalHeaders) {
     picked.ajaxInterceptor_globalHeaders = normalizeGlobalHeaders(picked.ajaxInterceptor_globalHeaders)
   }
+  if (picked.ajaxInterceptor_slowNetwork) {
+    picked.ajaxInterceptor_slowNetwork = normalizeSlowNetwork(picked.ajaxInterceptor_slowNetwork)
+  }
 
   const merged = { ...DEFAULT_SETTING, ...picked }
   merged.ajaxInterceptor_globalHeaders = normalizeGlobalHeaders(merged.ajaxInterceptor_globalHeaders)
+  merged.ajaxInterceptor_slowNetwork = normalizeSlowNetwork(merged.ajaxInterceptor_slowNetwork)
   return merged
 }

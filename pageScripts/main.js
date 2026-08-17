@@ -9,9 +9,54 @@ let ajax_interceptor_qoweifjqon = {
       switchOn: false,
       scopes: []
     },
+    ajaxInterceptor_slowNetwork: {
+      switchOn: false,
+      delayMs: 3000
+    },
   },
   /** Mock 能力是否开启（原 ajaxInterceptor_switchOn，语义改为仅控制 Mock） */
   isMockSwitchOn: () => !!ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_switchOn,
+  /** 是否会改写响应（慢网仅对这些请求生效） */
+  willOverrideResponse: (matchedInterface) => !!(
+    matchedInterface && (matchedInterface.overrideTxt || matchedInterface.overrideResponseFunc)
+  ),
+  /** 规范化慢网配置片段（全局含 delayMs；组/规则仅看 switchOn） */
+  normalizeSlowNetworkConf: (raw) => {
+    const src = raw && typeof raw === 'object' ? raw : {}
+    const delayMs = Number(src.delayMs)
+    return {
+      switchOn: !!src.switchOn,
+      delayMs: Number.isFinite(delayMs) && delayMs > 0
+        ? Math.min(Math.round(delayMs), 60000)
+        : 3000
+    }
+  },
+  /** 全局配置的延迟毫秒（不论全局开关，仅作时间值） */
+  getConfiguredSlowNetworkDelayMs: () => {
+    return ajax_interceptor_qoweifjqon.normalizeSlowNetworkConf(
+      ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_slowNetwork
+    ).delayMs
+  },
+  /**
+   * 命中且会改写响应时的慢网延迟
+   * 优先级：单接口 > 组/域名 > 全局；时间一律用全局 delayMs
+   */
+  getMatchedSlowNetworkDelayMs: (matchedInterface) => {
+    if (!ajax_interceptor_qoweifjqon.willOverrideResponse(matchedInterface)) return 0
+    const delayMs = ajax_interceptor_qoweifjqon.getConfiguredSlowNetworkDelayMs()
+    if (matchedInterface && matchedInterface.slowNetwork && matchedInterface.slowNetwork.switchOn) {
+      return delayMs
+    }
+    const group = ajax_interceptor_qoweifjqon.getGroupById(matchedInterface && matchedInterface.groupId)
+    if (group && group.slowNetwork && group.slowNetwork.switchOn) {
+      return delayMs
+    }
+    const globalConf = ajax_interceptor_qoweifjqon.normalizeSlowNetworkConf(
+      ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_slowNetwork
+    )
+    return globalConf.switchOn ? delayMs : 0
+  },
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   /**
    * 解析为统一 scopes 结构（兼容旧扁平 list）
    * scopes: [{ domain, headers: [{ key, value }] }]
@@ -400,18 +445,34 @@ let ajax_interceptor_qoweifjqon = {
       if (attr === 'onreadystatechange') {
         xhr.onreadystatechange = (...args) => {
           if (this.readyState === 4) {
-            // 请求成功
-            modifyResponse()
+            const deliver = () => {
+              modifyResponse()
+              this.onreadystatechange && this.onreadystatechange.apply(this, args)
+            }
+            const delayMs = ajax_interceptor_qoweifjqon.getMatchedSlowNetworkDelayMs(this._matchedInterface)
+            if (delayMs > 0) {
+              setTimeout(deliver, delayMs)
+            } else {
+              deliver()
+            }
+          } else {
+            this.onreadystatechange && this.onreadystatechange.apply(this, args)
           }
-          this.onreadystatechange && this.onreadystatechange.apply(this, args)
         }
         this.onreadystatechange = null
         continue
       } else if (attr === 'onload') {
         xhr.onload = (...args) => {
-          // 请求成功
-          modifyResponse()
-          this.onload && this.onload.apply(this, args)
+          const deliver = () => {
+            modifyResponse()
+            this.onload && this.onload.apply(this, args)
+          }
+          const delayMs = ajax_interceptor_qoweifjqon.getMatchedSlowNetworkDelayMs(this._matchedInterface)
+          if (delayMs > 0) {
+            setTimeout(deliver, delayMs)
+          } else {
+            deliver()
+          }
         }
         this.onload = null
         continue
@@ -729,6 +790,10 @@ let ajax_interceptor_qoweifjqon = {
             overrideStatus = 200
             overrideStatusText = 'OK'
           }
+        }
+        const delayMs = ajax_interceptor_qoweifjqon.getMatchedSlowNetworkDelayMs(matchedInterface)
+        if (delayMs > 0) {
+          await ajax_interceptor_qoweifjqon.sleep(delayMs)
         }
         txt = overrideResponse !== undefined ? overrideResponse : response.responseText
         const stream = new ReadableStream({

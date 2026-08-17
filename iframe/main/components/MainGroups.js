@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react'
 import { Collapse, Input, Select, Button, Switch, Icon } from 'antd'
 import Replacer from './Replacer'
 import MatchUrlPreview from './MatchUrlPreview'
+import SlowNetworkInline from './SlowNetworkInline'
 
 const { Option } = Select
 const Panel = Collapse.Panel
@@ -122,6 +123,7 @@ function GroupPanelHeader ({
   onGroupDomainChange,
   onFlushGroupsToStorage,
   onGroupSwitchChange,
+  onGroupSlowNetworkToggle,
   onAddRuleInGroup,
   onRemoveGroup,
   onToggle,
@@ -162,6 +164,12 @@ function GroupPanelHeader ({
           onChange={val => onGroupSwitchChange(val, group.id)}
           className="group-toolbar-switch"
         />
+        <SlowNetworkInline
+          switchOn={!!(group.slowNetwork && group.slowNetwork.switchOn)}
+          disabled={groupDisabled}
+          title="组慢网：开启后本组规则使用全局延迟时间；关闭则继承全局开关"
+          onToggle={() => onGroupSlowNetworkToggle(group.id)}
+        />
         {groupDisabled ? (
           <span className="group-disabled-badge">已关闭 · 本组规则暂不生效</span>
         ) : null}
@@ -195,6 +203,7 @@ export default function MainGroups ({
   onGroupDomainChange,
   onFlushGroupsToStorage,
   onGroupSwitchChange,
+  onGroupSlowNetworkToggle,
   onAddRuleInGroup,
   onRemoveGroup,
   onGroupReorder,
@@ -205,6 +214,7 @@ export default function MainGroups ({
   onFilterTypeChange,
   onMatchChange,
   onRuleSwitchChange,
+  onRuleSlowNetworkToggle,
   onDuplicateRule,
   onRemoveRule,
   set,
@@ -332,6 +342,7 @@ export default function MainGroups ({
                     onGroupDomainChange={onGroupDomainChange}
                     onFlushGroupsToStorage={onFlushGroupsToStorage}
                     onGroupSwitchChange={onGroupSwitchChange}
+                    onGroupSlowNetworkToggle={onGroupSlowNetworkToggle}
                     onAddRuleInGroup={onAddRuleInGroup}
                     onRemoveGroup={onRemoveGroup}
                     onToggle={toggleGroup}
@@ -354,6 +365,7 @@ export default function MainGroups ({
                       match,
                       label,
                       switchOn: ruleSwitchOn = true,
+                      slowNetwork,
                       key
                     },
                     i
@@ -406,6 +418,12 @@ export default function MainGroups ({
                               />
                             </Input.Group>
                             <div className="button-group">
+                              <SlowNetworkInline
+                                switchOn={!!(slowNetwork && slowNetwork.switchOn)}
+                                disabled={groupDisabled}
+                                title="单接口慢网：开启后本接口使用全局延迟时间；关闭则继承组/全局"
+                                onToggle={() => onRuleSlowNetworkToggle(i)}
+                              />
                               <Switch
                                 size="small"
                                 defaultChecked={ruleSwitchOn}

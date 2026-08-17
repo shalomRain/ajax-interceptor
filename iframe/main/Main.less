@@ -90,6 +90,39 @@
 .toolbar-capability-status:hover {
   color: #1890ff;
 }
+.toolbar-slow-network {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.toolbar-slow-delay-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  cursor: default;
+}
+.toolbar-slow-delay {
+  width: 44px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 1px solid #91d5ff;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 12px;
+  text-align: center;
+  color: #1890ff;
+  background: #e6f7ff;
+  outline: none;
+}
+.toolbar-slow-delay:focus {
+  border-color: #40a9ff;
+}
+.toolbar-slow-delay-unit {
+  font-size: 12px;
+  color: #8c8c8c;
+  line-height: 24px;
+}
 .toolbar-refresh-tip {
   margin-top: 8px;
   font-size: 12px;
@@ -271,6 +304,17 @@ body.group-drag-pressing * {
 }
 .group-toolbar-switch {
   margin: 0 2px 0 0;
+}
+.toolbar-capability--inline {
+  flex: none;
+  height: 24px;
+}
+.toolbar-capability.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.button-group .toolbar-capability--inline {
+  margin-right: 6px;
 }
 .rule-group--disabled {
   background: #f0f0f0;

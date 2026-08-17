@@ -8,6 +8,7 @@ import {
   parseBackupFile,
   ensureGroupsMigrated,
   normalizeGlobalHeaders,
+  normalizeSlowNetwork,
   pickSettingData
 } from './utils/settingStorage'
 
@@ -251,6 +252,44 @@ export const mainHandlerMethods = {
     const globalHeaders = { ...current, switchOn: !current.switchOn }
     window.setting.ajaxInterceptor_globalHeaders = globalHeaders
     this.set('ajaxInterceptor_globalHeaders', globalHeaders)
+    this.forceUpdate()
+  },
+
+  handleSlowNetworkSwitchChange () {
+    const current = normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
+    const slowNetwork = { ...current, switchOn: !current.switchOn }
+    window.setting.ajaxInterceptor_slowNetwork = slowNetwork
+    this.set('ajaxInterceptor_slowNetwork', slowNetwork)
+    this.forceUpdate()
+  },
+
+  handleSlowNetworkDelaySecChange (sec) {
+    const current = normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
+    const n = Number(sec)
+    const delayMs = (!Number.isFinite(n) || n <= 0)
+      ? 3000
+      : Math.min(Math.round(n * 1000), 60000)
+    const slowNetwork = { ...current, delayMs }
+    window.setting.ajaxInterceptor_slowNetwork = slowNetwork
+    this.set('ajaxInterceptor_slowNetwork', slowNetwork)
+    this.forceUpdate()
+  },
+
+  handleGroupSlowNetworkToggle (groupId) {
+    const g = window.setting.ajaxInterceptor_groups.find((x) => x.id === groupId)
+    if (!g) return
+    const on = !(g.slowNetwork && g.slowNetwork.switchOn)
+    g.slowNetwork = { switchOn: on }
+    this.set('ajaxInterceptor_groups', window.setting.ajaxInterceptor_groups)
+    this.forceUpdate()
+  },
+
+  handleRuleSlowNetworkToggle (i) {
+    const rule = window.setting.ajaxInterceptor_rules[i]
+    if (!rule) return
+    const on = !(rule.slowNetwork && rule.slowNetwork.switchOn)
+    rule.slowNetwork = { switchOn: on }
+    this.set('ajaxInterceptor_rules', window.setting.ajaxInterceptor_rules)
     this.forceUpdate()
   },
 

@@ -31,15 +31,57 @@ function CapabilityButton ({
   )
 }
 
+function SlowNetworkControl ({
+  isOn,
+  label,
+  delaySec,
+  onToggle,
+  onDelaySecChange
+}) {
+  return (
+    <div className="toolbar-slow-network">
+      <div className={`toolbar-capability${isOn ? ' is-on' : ''}`}>
+        <button
+          type="button"
+          className="toolbar-capability-status"
+          title="慢网：开启后，命中 Mock 的接口在返回前额外延迟（用于验证弱网）"
+          onClick={onToggle}
+        >
+          {label}
+        </button>
+      </div>
+      {isOn && (
+        <label className="toolbar-slow-delay-wrap" title="延迟秒数（1–60）">
+          <input
+            className="toolbar-slow-delay"
+            type="number"
+            min={1}
+            max={60}
+            step={1}
+            value={delaySec}
+            onChange={(e) => onDelaySecChange(e.target.value)}
+          />
+          <span className="toolbar-slow-delay-unit">秒</span>
+        </label>
+      )}
+    </div>
+  )
+}
+
 export default function MainToolbar ({
   mockOn,
   mockLabel,
   globalHeadersOn,
   globalHeadersLabel,
+  slowNetworkOn,
+  slowNetworkLabel,
+  slowNetworkDelaySec,
   onToggleMock,
   onAddGroup,
   onToggleGlobalHeaders,
   onOpenGlobalHeaders,
+  onToggleSlowNetwork,
+  onSlowNetworkDelaySecChange,
   onOpenSettings,
   onExportBackup,
   onImportBackup
@@ -62,6 +104,13 @@ export default function MainToolbar ({
           addTitle="配置请求头"
           onToggle={onToggleGlobalHeaders}
           onAdd={onOpenGlobalHeaders}
+        />
+        <SlowNetworkControl
+          isOn={slowNetworkOn}
+          label={slowNetworkLabel}
+          delaySec={slowNetworkDelaySec}
+          onToggle={onToggleSlowNetwork}
+          onDelaySecChange={onSlowNetworkDelaySecChange}
         />
       </div>
       <div className="main-toolbar-right">

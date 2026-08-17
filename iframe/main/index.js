@@ -8,6 +8,7 @@ import {
   ensureGroupsMigrated,
   needsGlobalHeadersMigrate,
   normalizeGlobalHeaders,
+  normalizeSlowNetwork,
   STORAGE_KEYS
 } from './utils/settingStorage'
 
@@ -17,6 +18,7 @@ if (storageLocal) {
     const headersNeedMigrate = needsGlobalHeadersMigrate(result.ajaxInterceptor_globalHeaders)
     const merged = { ...DEFAULT_SETTING, ...result }
     merged.ajaxInterceptor_globalHeaders = normalizeGlobalHeaders(merged.ajaxInterceptor_globalHeaders)
+    merged.ajaxInterceptor_slowNetwork = normalizeSlowNetwork(merged.ajaxInterceptor_slowNetwork)
     const { out, needsSave } = ensureGroupsMigrated(merged)
     window.setting = out
     const toSave = {}
@@ -39,7 +41,8 @@ if (storageLocal) {
 } else {
   const merged = {
     ...DEFAULT_SETTING,
-    ajaxInterceptor_globalHeaders: normalizeGlobalHeaders(DEFAULT_SETTING.ajaxInterceptor_globalHeaders)
+    ajaxInterceptor_globalHeaders: normalizeGlobalHeaders(DEFAULT_SETTING.ajaxInterceptor_globalHeaders),
+    ajaxInterceptor_slowNetwork: normalizeSlowNetwork(DEFAULT_SETTING.ajaxInterceptor_slowNetwork)
   }
   const { out } = ensureGroupsMigrated(merged)
   window.setting = out

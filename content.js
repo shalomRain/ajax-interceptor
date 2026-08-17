@@ -21,7 +21,7 @@ mockScript.addEventListener('load', () => {
   document.documentElement.appendChild(script)
 
   script.addEventListener('load', () => {
-    chrome.storage.local.get(['ajaxInterceptor_switchOn', 'ajaxInterceptor_rules', 'ajaxInterceptor_groups', 'ajaxInterceptor_globalHeaders'], (result) => {
+    chrome.storage.local.get(['ajaxInterceptor_switchOn', 'ajaxInterceptor_rules', 'ajaxInterceptor_groups', 'ajaxInterceptor_globalHeaders', 'ajaxInterceptor_slowNetwork'], (result) => {
       if (result.hasOwnProperty('ajaxInterceptor_switchOn')) {
         postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_switchOn', value: result.ajaxInterceptor_switchOn})
       }
@@ -33,6 +33,9 @@ mockScript.addEventListener('load', () => {
       }
       if (result.ajaxInterceptor_globalHeaders) {
         postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_globalHeaders', value: result.ajaxInterceptor_globalHeaders})
+      }
+      if (result.ajaxInterceptor_slowNetwork) {
+        postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_slowNetwork', value: result.ajaxInterceptor_slowNetwork})
       }
     })
   })

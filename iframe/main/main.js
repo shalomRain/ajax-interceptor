@@ -8,8 +8,10 @@ import MainModals from './components/MainModals'
 import {
   getGlobalHeadersStatusLabel,
   getMockStatusLabel,
+  getSlowNetworkStatusLabel,
   isGlobalHeadersActive,
-  normalizeGlobalHeaders
+  normalizeGlobalHeaders,
+  normalizeSlowNetwork
 } from './utils/settingStorage'
 import './Main.less'
 
@@ -65,6 +67,7 @@ export default class Main extends Component {
     const groups = window.setting.ajaxInterceptor_groups || []
     const savedGlobalHeaders = normalizeGlobalHeaders(window.setting.ajaxInterceptor_globalHeaders)
     const globalHeadersOn = isGlobalHeadersActive(savedGlobalHeaders)
+    const slowNetwork = normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
     return (
       <div className="ajax-modifier-main">
         <input
@@ -79,10 +82,15 @@ export default class Main extends Component {
           mockLabel={getMockStatusLabel(mockOn, rules, groups)}
           globalHeadersOn={globalHeadersOn}
           globalHeadersLabel={getGlobalHeadersStatusLabel(savedGlobalHeaders)}
+          slowNetworkOn={slowNetwork.switchOn}
+          slowNetworkLabel={getSlowNetworkStatusLabel(slowNetwork)}
+          slowNetworkDelaySec={Math.max(1, Math.round(slowNetwork.delayMs / 1000))}
           onToggleMock={this.handleSwitchChange}
           onAddGroup={this.handleAddGroup}
           onToggleGlobalHeaders={this.handleGlobalHeadersSwitchChange}
           onOpenGlobalHeaders={this.showGlobalHeadersModal}
+          onToggleSlowNetwork={this.handleSlowNetworkSwitchChange}
+          onSlowNetworkDelaySecChange={this.handleSlowNetworkDelaySecChange}
           onOpenSettings={this.showSettingModal}
           onExportBackup={this.handleExportBackup}
           onImportBackup={this.handleImportBackupClick}
@@ -103,6 +111,7 @@ export default class Main extends Component {
             onGroupDomainChange={this.handleGroupDomainChange}
             onFlushGroupsToStorage={this.flushGroupsToStorage}
             onGroupSwitchChange={this.handleGroupSwitchChange}
+            onGroupSlowNetworkToggle={this.handleGroupSlowNetworkToggle}
             onAddRuleInGroup={this.handleClickAddInGroup}
             onRemoveGroup={this.handleRemoveGroup}
             onGroupReorder={this.handleGroupReorder}
@@ -113,6 +122,7 @@ export default class Main extends Component {
             onFilterTypeChange={this.handleFilterTypeChange}
             onMatchChange={this.handleMatchChange}
             onRuleSwitchChange={this.handleSingleSwitchChange}
+            onRuleSlowNetworkToggle={this.handleRuleSlowNetworkToggle}
             onDuplicateRule={this.handleClickDuplicateRule}
             onRemoveRule={this.handleClickRemove}
             set={this.set}
