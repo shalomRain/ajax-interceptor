@@ -4,28 +4,29 @@ import { Icon, Dropdown, Menu } from 'antd'
 function CapabilityButton ({
   isOn,
   label,
-  statusTitle,
-  addTitle,
+  toggleTitle,
+  configTitle,
   onToggle,
-  onAdd
+  onConfig
 }) {
   return (
     <div className={`toolbar-capability${isOn ? ' is-on' : ''}`}>
       <button
         type="button"
-        className="toolbar-capability-add"
-        title={addTitle}
-        onClick={onAdd}
+        className="toolbar-capability-toggle"
+        title={toggleTitle}
+        onClick={onToggle}
       >
-        <Icon type="plus" />
+        <Icon type={isOn ? 'check-circle' : 'close-circle'} />
       </button>
       <button
         type="button"
         className="toolbar-capability-status"
-        title={statusTitle}
-        onClick={onToggle}
+        title={configTitle}
+        onClick={onConfig}
       >
-        {label}
+        <Icon type="plus" />
+        <span>{label}</span>
       </button>
     </div>
   )
@@ -75,26 +76,26 @@ export default function MainToolbar ({
         <CapabilityButton
           isOn={mockOn}
           label={mockLabel}
-          statusTitle="Mock：点击开关。开启后按规则改写匹配到的接口响应"
-          addTitle="新建组"
+          toggleTitle="Mock：点击开关。开启后按规则改写匹配到的接口响应"
+          configTitle="新建组"
           onToggle={onToggleMock}
-          onAdd={onAddGroup}
+          onConfig={onAddGroup}
         />
         <CapabilityButton
           isOn={globalHeadersOn}
           label={globalHeadersLabel}
-          statusTitle="请求头：点击开关。可按域名或全局注入请求头"
-          addTitle="配置请求头"
+          toggleTitle="请求头：点击开关。可按域名或全局注入请求头"
+          configTitle="配置请求头"
           onToggle={onToggleGlobalHeaders}
-          onAdd={onOpenGlobalHeaders}
+          onConfig={onOpenGlobalHeaders}
         />
         <CapabilityButton
           isOn={slowNetworkOn}
           label={slowNetworkLabel}
-          statusTitle="慢网：点击开关。按作用域延迟请求（独立于 Mock）"
-          addTitle="配置慢网"
+          toggleTitle="慢网：点击开关。按作用域延迟请求（独立于 Mock）"
+          configTitle="配置慢网"
           onToggle={onToggleSlowNetwork}
-          onAdd={onOpenSlowNetwork}
+          onConfig={onOpenSlowNetwork}
         />
       </div>
       <div className="main-toolbar-right">
