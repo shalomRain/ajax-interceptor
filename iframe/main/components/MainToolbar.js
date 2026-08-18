@@ -1,5 +1,5 @@
 import React from 'react'
-import { Icon } from 'antd'
+import { Icon, Dropdown, Menu } from 'antd'
 
 function CapabilityButton ({
   isOn,
@@ -31,43 +31,6 @@ function CapabilityButton ({
   )
 }
 
-function SlowNetworkControl ({
-  isOn,
-  label,
-  delaySec,
-  onToggle,
-  onDelaySecChange
-}) {
-  return (
-    <div className="toolbar-slow-network">
-      <div className={`toolbar-capability${isOn ? ' is-on' : ''}`}>
-        <button
-          type="button"
-          className="toolbar-capability-status"
-          title="慢网：开启后，命中 Mock 的接口在返回前额外延迟（用于验证弱网）"
-          onClick={onToggle}
-        >
-          {label}
-        </button>
-      </div>
-      {isOn && (
-        <label className="toolbar-slow-delay-wrap" title="延迟秒数（1–60）">
-          <input
-            className="toolbar-slow-delay"
-            type="number"
-            min={1}
-            max={60}
-            step={1}
-            value={delaySec}
-            onChange={(e) => onDelaySecChange(e.target.value)}
-          />
-          <span className="toolbar-slow-delay-unit">秒</span>
-        </label>
-      )}
-    </div>
-  )
-}
-
 export default function MainToolbar ({
   mockOn,
   mockLabel,
@@ -75,17 +38,37 @@ export default function MainToolbar ({
   globalHeadersLabel,
   slowNetworkOn,
   slowNetworkLabel,
-  slowNetworkDelaySec,
   onToggleMock,
   onAddGroup,
   onToggleGlobalHeaders,
   onOpenGlobalHeaders,
   onToggleSlowNetwork,
-  onSlowNetworkDelaySecChange,
+  onOpenSlowNetwork,
   onOpenSettings,
   onExportBackup,
   onImportBackup
 }) {
+  const toolsMenu = (
+    <Menu
+      onClick={({ key }) => {
+        if (key === 'export') onExportBackup()
+        if (key === 'import') onImportBackup()
+        if (key === 'settings') onOpenSettings()
+      }}
+    >
+      <Menu.Item key="export">
+        <Icon type="upload" /> 导出备份
+      </Menu.Item>
+      <Menu.Item key="import">
+        <Icon type="download" /> 导入备份
+      </Menu.Item>
+      <Menu.Divider />
+      <Menu.Item key="settings">
+        <Icon type="setting" /> 面板设置
+      </Menu.Item>
+    </Menu>
+  )
+
   return (
     <div className="main-toolbar-inner">
       <div className="main-toolbar-left">
@@ -105,33 +88,22 @@ export default function MainToolbar ({
           onToggle={onToggleGlobalHeaders}
           onAdd={onOpenGlobalHeaders}
         />
-        <SlowNetworkControl
+        <CapabilityButton
           isOn={slowNetworkOn}
           label={slowNetworkLabel}
-          delaySec={slowNetworkDelaySec}
+          statusTitle="慢网：点击开关。按作用域延迟请求（独立于 Mock）"
+          addTitle="配置慢网"
           onToggle={onToggleSlowNetwork}
-          onDelaySecChange={onSlowNetworkDelaySecChange}
+          onAdd={onOpenSlowNetwork}
         />
       </div>
       <div className="main-toolbar-right">
-        <Icon
-          type="upload"
-          title="导出备份"
-          style={{ fontSize: '20px', color: '#1890ff', cursor: 'pointer' }}
-          onClick={onExportBackup}
-        />
-        <Icon
-          type="download"
-          title="导入备份"
-          style={{ fontSize: '20px', color: '#1890ff', cursor: 'pointer' }}
-          onClick={onImportBackup}
-        />
-        <Icon
-          type="setting"
-          title="设置"
-          style={{ fontSize: '22px', color: '#1890ff', cursor: 'pointer' }}
-          onClick={onOpenSettings}
-        />
+        <Dropdown overlay={toolsMenu} trigger={['click']} placement="bottomRight">
+          <button type="button" className="toolbar-tools-btn" title="备份与设置">
+            <Icon type="ellipsis" />
+            <span>更多</span>
+          </button>
+        </Dropdown>
       </div>
     </div>
   )

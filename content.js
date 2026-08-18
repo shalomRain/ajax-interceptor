@@ -8,36 +8,25 @@
 // s1.setAttribute('src', chrome.runtime.getURL('pageScripts/defaultSettings.js'))
 // document.documentElement.appendChild(s1)
 
-// 在页面上插入代码：先 Mock.js（TS MOCK 模式），再主拦截逻辑
+// 在页面上插入代码：主拦截逻辑尽早挂上 XHR/fetch；Mock.js 并行加载（ts-mock / Mock.js 模式用）
 const mockScript = document.createElement('script')
 mockScript.setAttribute('type', 'text/javascript')
 mockScript.setAttribute('src', chrome.runtime.getURL('pageScripts/mockjs.js'))
 document.documentElement.appendChild(mockScript)
 
-mockScript.addEventListener('load', () => {
-  const script = document.createElement('script')
-  script.setAttribute('type', 'text/javascript')
-  script.setAttribute('src', chrome.runtime.getURL('pageScripts/main.js'))
-  document.documentElement.appendChild(script)
+const script = document.createElement('script')
+script.setAttribute('type', 'text/javascript')
+script.setAttribute('src', chrome.runtime.getURL('pageScripts/main.js'))
+document.documentElement.appendChild(script)
 
-  script.addEventListener('load', () => {
-    chrome.storage.local.get(['ajaxInterceptor_switchOn', 'ajaxInterceptor_rules', 'ajaxInterceptor_groups', 'ajaxInterceptor_globalHeaders', 'ajaxInterceptor_slowNetwork'], (result) => {
-      if (result.hasOwnProperty('ajaxInterceptor_switchOn')) {
-        postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_switchOn', value: result.ajaxInterceptor_switchOn})
-      }
-      if (result.ajaxInterceptor_groups) {
-        postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_groups', value: result.ajaxInterceptor_groups})
-      }
-      if (result.ajaxInterceptor_rules) {
-        postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_rules', value: result.ajaxInterceptor_rules})
-      }
-      if (result.ajaxInterceptor_globalHeaders) {
-        postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_globalHeaders', value: result.ajaxInterceptor_globalHeaders})
-      }
-      if (result.ajaxInterceptor_slowNetwork) {
-        postMessage({type: 'ajaxInterceptor', to: 'pageScript', key: 'ajaxInterceptor_slowNetwork', value: result.ajaxInterceptor_slowNetwork})
-      }
-    })
+script.addEventListener('load', () => {
+  chrome.storage.local.get(['ajaxInterceptor_switchOn', 'ajaxInterceptor_rules', 'ajaxInterceptor_groups', 'ajaxInterceptor_globalHeaders', 'ajaxInterceptor_slowNetwork'], (result) => {
+    postMessage({
+      type: 'ajaxInterceptor',
+      to: 'pageScript',
+      action: 'applySettings',
+      value: result
+    }, '*')
   })
 })
 
@@ -95,7 +84,7 @@ function insertIframe() {
 chrome.runtime.onMessage.addListener(msg => {
   if (msg.type === 'ajaxInterceptor' && msg.to === 'content') {
     if (!msg.hasOwnProperty('iframeScriptLoaded')) {
-      postMessage({ ...msg, to: 'pageScript' })
+      postMessage({ ...msg, to: 'pageScript' }, '*')
     }
   }
 })

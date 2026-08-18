@@ -137,17 +137,37 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.key === 'customFunction') {
       setPopup(msg.value.panelPosition)
     }
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      if (tabs && tabs.length) {
-        handleContentSend(tabs[0].id, { ...msg, to: 'content' })
-      } else if (msg.hasOwnProperty('iframeScriptLoaded')) {
-        // 收到的传送信息是iframeScriptLoaded，说明是suspend刷新状态，提示需要在页面上刷新（只有在suspend时才会有此类情况）
-        console.warn("[Ajax Modifier] To make the Ajax Modifier work, please do not refresh on devtools.")
-      } else if (msg.key === "ajaxInterceptor_rules" || msg.key === 'ajaxInterceptor_switchOn' || msg.key === 'ajaxInterceptor_groups' || msg.key === 'ajaxInterceptor_globalHeaders' || msg.key === 'ajaxInterceptor_slowNetwork') {
-        // 收到的传送信息是修改rules且拿不到tab，说明内容也更新不到page script上，提示需要刷新（只有在分离的devtools时才会有此类情况）
-        chrome.runtime.sendMessage(chrome.runtime.id, {type: 'ajaxInterceptor', to: 'iframe', showFreshTip: true})
-      }
-    })
+
+    const settingKeys = [
+      'ajaxInterceptor_switchOn',
+      'ajaxInterceptor_rules',
+      'ajaxInterceptor_groups',
+      'ajaxInterceptor_globalHeaders',
+      'ajaxInterceptor_slowNetwork'
+    ]
+    if (settingKeys.includes(msg.key)) {
+      chrome.tabs.query({}, function (tabs) {
+        let sent = 0
+        ;(tabs || []).forEach((tab) => {
+          if (!tab || !tab.id) return
+          const url = tab.url || ''
+          if (/^(chrome|edge|about|devtools|chrome-extension):/i.test(url)) return
+          handleContentSend(tab.id, { ...msg, to: 'content' })
+          sent++
+        })
+        if (!sent && msg.key !== 'customFunction') {
+          chrome.runtime.sendMessage(chrome.runtime.id, {type: 'ajaxInterceptor', to: 'iframe', showFreshTip: true})
+        }
+      })
+    } else {
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        if (tabs && tabs.length) {
+          handleContentSend(tabs[0].id, { ...msg, to: 'content' })
+        } else if (msg.hasOwnProperty('iframeScriptLoaded')) {
+          console.warn("[Ajax Modifier] To make the Ajax Modifier work, please do not refresh on devtools.")
+        }
+      })
+    }
   }
 })
 

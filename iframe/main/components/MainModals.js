@@ -1,14 +1,17 @@
 import React from 'react'
 import { Modal, Button, Radio, Icon } from 'antd'
 import GlobalHeadersEditor from './GlobalHeadersEditor'
+import SlowNetworkEditor from './SlowNetworkEditor'
 
 export default function MainModals ({
   settingModalVisible,
   globalHeadersModalVisible,
+  slowNetworkModalVisible,
   infoModalVisible,
   imageModalVisible,
   customFunction,
   globalHeaders,
+  slowNetwork,
   positionClass,
   onSettingCancel,
   onSettingConfirm,
@@ -16,6 +19,9 @@ export default function MainModals ({
   onGlobalHeadersChange,
   onGlobalHeadersCancel,
   onGlobalHeadersConfirm,
+  onSlowNetworkChange,
+  onSlowNetworkCancel,
+  onSlowNetworkConfirm,
   onShowImageModal,
   onImageModalClose,
   onInfoModalClose
@@ -71,6 +77,25 @@ export default function MainModals ({
         <GlobalHeadersEditor
           value={globalHeaders}
           onChange={onGlobalHeadersChange}
+        />
+      </Modal>
+      <Modal
+        visible={slowNetworkModalVisible}
+        title="Slow Network"
+        width="640px"
+        onCancel={onSlowNetworkCancel}
+        footer={[
+          <Button key="Cancel" onClick={onSlowNetworkCancel}>
+            Cancel
+          </Button>,
+          <Button key="Submit" type="primary" onClick={onSlowNetworkConfirm}>
+            Submit
+          </Button>,
+        ]}
+      >
+        <SlowNetworkEditor
+          value={slowNetwork}
+          onChange={onSlowNetworkChange}
         />
       </Modal>
       <Modal

@@ -10,6 +10,7 @@ import {
   getMockStatusLabel,
   getSlowNetworkStatusLabel,
   isGlobalHeadersActive,
+  isSlowNetworkActive,
   normalizeGlobalHeaders,
   normalizeSlowNetwork
 } from './utils/settingStorage'
@@ -38,6 +39,7 @@ export default class Main extends Component {
   state = {
     settingModalVisible: false,
     globalHeadersModalVisible: false,
+    slowNetworkModalVisible: false,
     imageModalVisible: false,
     infoModalVisible: false,
     positionClass: 'suspend',
@@ -46,6 +48,11 @@ export default class Main extends Component {
     },
     globalHeaders: {
       switchOn: false,
+      scopes: []
+    },
+    slowNetwork: {
+      switchOn: false,
+      delayMs: 3000,
       scopes: []
     },
     showRefreshTip: false,
@@ -67,7 +74,8 @@ export default class Main extends Component {
     const groups = window.setting.ajaxInterceptor_groups || []
     const savedGlobalHeaders = normalizeGlobalHeaders(window.setting.ajaxInterceptor_globalHeaders)
     const globalHeadersOn = isGlobalHeadersActive(savedGlobalHeaders)
-    const slowNetwork = normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
+    const savedSlowNetwork = normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
+    const slowNetworkOn = isSlowNetworkActive(savedSlowNetwork)
     return (
       <div className="ajax-modifier-main">
         <input
@@ -82,15 +90,14 @@ export default class Main extends Component {
           mockLabel={getMockStatusLabel(mockOn, rules, groups)}
           globalHeadersOn={globalHeadersOn}
           globalHeadersLabel={getGlobalHeadersStatusLabel(savedGlobalHeaders)}
-          slowNetworkOn={slowNetwork.switchOn}
-          slowNetworkLabel={getSlowNetworkStatusLabel(slowNetwork)}
-          slowNetworkDelaySec={Math.max(1, Math.round(slowNetwork.delayMs / 1000))}
+          slowNetworkOn={slowNetworkOn}
+          slowNetworkLabel={getSlowNetworkStatusLabel(savedSlowNetwork)}
           onToggleMock={this.handleSwitchChange}
           onAddGroup={this.handleAddGroup}
           onToggleGlobalHeaders={this.handleGlobalHeadersSwitchChange}
           onOpenGlobalHeaders={this.showGlobalHeadersModal}
           onToggleSlowNetwork={this.handleSlowNetworkSwitchChange}
-          onSlowNetworkDelaySecChange={this.handleSlowNetworkDelaySecChange}
+          onOpenSlowNetwork={this.showSlowNetworkModal}
           onOpenSettings={this.showSettingModal}
           onExportBackup={this.handleExportBackup}
           onImportBackup={this.handleImportBackupClick}
@@ -111,7 +118,6 @@ export default class Main extends Component {
             onGroupDomainChange={this.handleGroupDomainChange}
             onFlushGroupsToStorage={this.flushGroupsToStorage}
             onGroupSwitchChange={this.handleGroupSwitchChange}
-            onGroupSlowNetworkToggle={this.handleGroupSlowNetworkToggle}
             onAddRuleInGroup={this.handleClickAddInGroup}
             onRemoveGroup={this.handleRemoveGroup}
             onGroupReorder={this.handleGroupReorder}
@@ -122,7 +128,6 @@ export default class Main extends Component {
             onFilterTypeChange={this.handleFilterTypeChange}
             onMatchChange={this.handleMatchChange}
             onRuleSwitchChange={this.handleSingleSwitchChange}
-            onRuleSlowNetworkToggle={this.handleRuleSlowNetworkToggle}
             onDuplicateRule={this.handleClickDuplicateRule}
             onRemoveRule={this.handleClickRemove}
             set={this.set}
@@ -132,10 +137,12 @@ export default class Main extends Component {
         <MainModals
           settingModalVisible={this.state.settingModalVisible}
           globalHeadersModalVisible={this.state.globalHeadersModalVisible}
+          slowNetworkModalVisible={this.state.slowNetworkModalVisible}
           infoModalVisible={this.state.infoModalVisible}
           imageModalVisible={this.state.imageModalVisible}
           customFunction={this.state.customFunction}
           globalHeaders={this.state.globalHeaders}
+          slowNetwork={this.state.slowNetwork}
           positionClass={this.state.positionClass}
           onSettingCancel={this.handleSettingModalCancel}
           onSettingConfirm={this.handleSettingModalConfirm}
@@ -143,6 +150,9 @@ export default class Main extends Component {
           onGlobalHeadersChange={this.handleGlobalHeadersChange}
           onGlobalHeadersCancel={this.handleGlobalHeadersCancel}
           onGlobalHeadersConfirm={this.handleGlobalHeadersConfirm}
+          onSlowNetworkChange={this.handleSlowNetworkChange}
+          onSlowNetworkCancel={this.handleSlowNetworkCancel}
+          onSlowNetworkConfirm={this.handleSlowNetworkConfirm}
           onShowImageModal={this.showImageModal}
           onImageModalClose={this.handleImageModalClose}
           onInfoModalClose={this.handleInfoModalClose}

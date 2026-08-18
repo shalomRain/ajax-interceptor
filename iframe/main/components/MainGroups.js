@@ -1,8 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react'
-import { Collapse, Input, Select, Button, Switch, Icon } from 'antd'
+import { Collapse, Input, Select, Button, Switch, Icon, Dropdown, Menu } from 'antd'
 import Replacer from './Replacer'
-import MatchUrlPreview from './MatchUrlPreview'
-import SlowNetworkInline from './SlowNetworkInline'
 
 const { Option } = Select
 const Panel = Collapse.Panel
@@ -123,7 +121,6 @@ function GroupPanelHeader ({
   onGroupDomainChange,
   onFlushGroupsToStorage,
   onGroupSwitchChange,
-  onGroupSlowNetworkToggle,
   onAddRuleInGroup,
   onRemoveGroup,
   onToggle,
@@ -131,6 +128,22 @@ function GroupPanelHeader ({
   onDragMove,
   onDragEnd
 }) {
+  const moreMenu = (
+    <Menu
+      onClick={({ key, domEvent }) => {
+        if (domEvent) {
+          domEvent.stopPropagation()
+          domEvent.preventDefault()
+        }
+        if (key === 'remove') onRemoveGroup(group.id)
+      }}
+    >
+      <Menu.Item key="remove">
+        <span className="menu-item-danger">删除本组</span>
+      </Menu.Item>
+    </Menu>
+  )
+
   return (
     <div className="group-panel-header" onClick={e => e.stopPropagation()}>
       <GroupExpandIcon
@@ -164,14 +177,8 @@ function GroupPanelHeader ({
           onChange={val => onGroupSwitchChange(val, group.id)}
           className="group-toolbar-switch"
         />
-        <SlowNetworkInline
-          switchOn={!!(group.slowNetwork && group.slowNetwork.switchOn)}
-          disabled={groupDisabled}
-          title="组慢网：开启后本组规则使用全局延迟时间；关闭则继承全局开关"
-          onToggle={() => onGroupSlowNetworkToggle(group.id)}
-        />
         {groupDisabled ? (
-          <span className="group-disabled-badge">已关闭 · 本组规则暂不生效</span>
+          <span className="group-disabled-badge">已关闭</span>
         ) : null}
         <Button
           type="dashed"
@@ -181,13 +188,17 @@ function GroupPanelHeader ({
         >
           + 规则
         </Button>
-        <Button
-          type="link"
-          size="small"
-          onClick={() => onRemoveGroup(group.id)}
-        >
-          删组
-        </Button>
+        <Dropdown overlay={moreMenu} trigger={['click']} placement="bottomRight">
+          <Button
+            type="link"
+            size="small"
+            className="header-more-btn"
+            title="更多"
+            onClick={e => e.stopPropagation()}
+          >
+            <Icon type="ellipsis" />
+          </Button>
+        </Dropdown>
       </div>
     </div>
   )
@@ -203,7 +214,6 @@ export default function MainGroups ({
   onGroupDomainChange,
   onFlushGroupsToStorage,
   onGroupSwitchChange,
-  onGroupSlowNetworkToggle,
   onAddRuleInGroup,
   onRemoveGroup,
   onGroupReorder,
@@ -214,7 +224,6 @@ export default function MainGroups ({
   onFilterTypeChange,
   onMatchChange,
   onRuleSwitchChange,
-  onRuleSlowNetworkToggle,
   onDuplicateRule,
   onRemoveRule,
   set,
@@ -342,7 +351,6 @@ export default function MainGroups ({
                     onGroupDomainChange={onGroupDomainChange}
                     onFlushGroupsToStorage={onFlushGroupsToStorage}
                     onGroupSwitchChange={onGroupSwitchChange}
-                    onGroupSlowNetworkToggle={onGroupSlowNetworkToggle}
                     onAddRuleInGroup={onAddRuleInGroup}
                     onRemoveGroup={onRemoveGroup}
                     onToggle={toggleGroup}
@@ -365,110 +373,111 @@ export default function MainGroups ({
                       match,
                       label,
                       switchOn: ruleSwitchOn = true,
-                      slowNetwork,
                       key
                     },
                     i
-                  }) => (
-                    <Panel
-                      key={key}
-                      header={(
-                        <div
-                          className="panel-header-wrap"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <div className="panel-header">
-                            <Input.Group compact style={{ flex: 'auto', display: 'flex' }}>
+                  }) => {
+                    const ruleMoreMenu = (
+                      <Menu
+                        onClick={({ key: menuKey, domEvent }) => {
+                          if (domEvent) {
+                            domEvent.stopPropagation()
+                            domEvent.preventDefault()
+                          }
+                          if (menuKey === 'duplicate') onDuplicateRule({ stopPropagation () {} }, i)
+                          if (menuKey === 'remove') onRemoveRule({ stopPropagation () {} }, key)
+                        }}
+                      >
+                        <Menu.Item key="duplicate" disabled={groupDisabled}>复制规则</Menu.Item>
+                        <Menu.Item key="remove" disabled={groupDisabled}>
+                          <span className="menu-item-danger">删除规则</span>
+                        </Menu.Item>
+                      </Menu>
+                    )
+
+                    return (
+                      <Panel
+                        key={key}
+                        header={(
+                          <div
+                            className="panel-header-wrap"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <div className="panel-header">
                               <Input
-                                placeholder="备注名（可选）"
-                                style={{ width: '1px', maxWidth: '140px', flex: 'auto', display: 'inline-block' }}
+                                className="rule-label-input"
+                                placeholder="备注"
                                 defaultValue={label}
                                 onChange={e => onLabelChange(e, i)}
                                 disabled={groupDisabled}
                               />
-                              <Select
-                                defaultValue={limitMethod}
-                                style={{ width: '1px', maxWidth: '90px', flex: '1.5 1 auto', display: 'inline-block' }}
-                                onChange={e => onLimitMethodChange(e, i)}
-                                disabled={groupDisabled}
-                              >
-                                <Option value="ALL">ALL</Option>
-                                <Option value="GET">GET</Option>
-                                <Option value="POST">POST</Option>
-                                <Option value="PUT">PUT</Option>
-                                <Option value="HEAD">HEAD</Option>
-                                <Option value="DELETE">DELETE</Option>
-                                <Option value="OPTIONS">OPTIONS</Option>
-                              </Select>
-                              <Select
-                                defaultValue={filterType}
-                                style={{ width: '1px', maxWidth: '90px', flex: '1.5 1 auto', display: 'inline-block' }}
-                                onChange={e => onFilterTypeChange(e, i)}
-                                disabled={groupDisabled}
-                              >
-                                <Option value="normal">normal</Option>
-                                <Option value="regex">regex</Option>
-                              </Select>
-                              <Input
-                                placeholder={filterType === 'normal' ? 'eg: abc/get' : 'eg: abc.*'}
-                                style={{ width: '1px', flex: '1.5 1 auto', display: 'inline-block' }}
-                                defaultValue={match}
-                                onChange={e => onMatchChange(e, i)}
-                                disabled={groupDisabled}
-                              />
-                            </Input.Group>
-                            <div className="button-group">
-                              <SlowNetworkInline
-                                switchOn={!!(slowNetwork && slowNetwork.switchOn)}
-                                disabled={groupDisabled}
-                                title="单接口慢网：开启后本接口使用全局延迟时间；关闭则继承组/全局"
-                                onToggle={() => onRuleSlowNetworkToggle(i)}
-                              />
-                              <Switch
-                                size="small"
-                                defaultChecked={ruleSwitchOn}
-                                onChange={val => onRuleSwitchChange(val, i)}
-                                style={{ width: '28px', flex: 'none', marginRight: '8px' }}
-                                disabled={groupDisabled}
-                              />
-                              <Button
-                                type="primary"
-                                shape="circle"
-                                icon="plus"
-                                size="small"
-                                title="复制本规则（同组内新增一条，可改路径 match 与响应体）"
-                                onClick={e => onDuplicateRule(e, i)}
-                                style={{ width: '24px', flex: 'none', marginRight: 4 }}
-                                disabled={groupDisabled}
-                              />
-                              <Button
-                                type="primary"
-                                shape="circle"
-                                icon="minus"
-                                size="small"
-                                onClick={e => onRemoveRule(e, key)}
-                                style={{ width: '24px', flex: 'none' }}
-                                disabled={groupDisabled}
-                              />
+                              <div className="rule-match-compact">
+                                <Select
+                                  className="rule-method-select"
+                                  size="default"
+                                  defaultValue={limitMethod}
+                                  onChange={e => onLimitMethodChange(e, i)}
+                                  disabled={groupDisabled}
+                                >
+                                  <Option value="ALL">ALL</Option>
+                                  <Option value="GET">GET</Option>
+                                  <Option value="POST">POST</Option>
+                                  <Option value="PUT">PUT</Option>
+                                  <Option value="HEAD">HEAD</Option>
+                                  <Option value="DELETE">DELETE</Option>
+                                  <Option value="OPTIONS">OPTIONS</Option>
+                                </Select>
+                                <Input
+                                  className="rule-match-input"
+                                  placeholder={filterType === 'normal' ? '路径 eg: abc/get' : '正则 eg: abc.*'}
+                                  defaultValue={match}
+                                  onChange={e => onMatchChange(e, i)}
+                                  disabled={groupDisabled}
+                                />
+                              </div>
+                              <div className="button-group">
+                                <Switch
+                                  size="small"
+                                  defaultChecked={ruleSwitchOn}
+                                  onChange={val => onRuleSwitchChange(val, i)}
+                                  style={{ width: '28px', flex: 'none', marginRight: '4px' }}
+                                  disabled={groupDisabled}
+                                />
+                                <Dropdown
+                                  overlay={ruleMoreMenu}
+                                  trigger={['click']}
+                                  placement="bottomRight"
+                                >
+                                  <Button
+                                    type="link"
+                                    size="small"
+                                    className="header-more-btn"
+                                    title="更多"
+                                    disabled={groupDisabled}
+                                    onClick={e => e.stopPropagation()}
+                                  >
+                                    <Icon type="ellipsis" />
+                                  </Button>
+                                </Dropdown>
+                              </div>
                             </div>
                           </div>
-                          <MatchUrlPreview
-                            groupId={group.id}
-                            ruleIndex={i}
-                            settingsRevision={settingsRevision}
-                          />
-                        </div>
-                      )}
-                    >
-                      <Replacer
-                        key={`${settingsRevision}-${key}`}
-                        updateAddBtnTop_interval={updateAddBtnTop_interval}
-                        index={i}
-                        set={set}
-                        disabled={groupDisabled}
-                      />
-                    </Panel>
-                  ))}
+                        )}
+                      >
+                        <Replacer
+                          key={`${settingsRevision}-${key}`}
+                          updateAddBtnTop_interval={updateAddBtnTop_interval}
+                          index={i}
+                          set={set}
+                          disabled={groupDisabled}
+                          groupId={group.id}
+                          filterType={filterType}
+                          onFilterTypeChange={onFilterTypeChange}
+                          settingsRevision={settingsRevision}
+                        />
+                      </Panel>
+                    )
+                  })}
                 </Collapse>
               </Panel>
             </Collapse>

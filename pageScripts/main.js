@@ -11,50 +11,127 @@ let ajax_interceptor_qoweifjqon = {
     },
     ajaxInterceptor_slowNetwork: {
       switchOn: false,
-      delayMs: 3000
+      delayMs: 3000,
+      scopes: []
     },
   },
   /** Mock 能力是否开启（原 ajaxInterceptor_switchOn，语义改为仅控制 Mock） */
   isMockSwitchOn: () => !!ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_switchOn,
-  /** 是否会改写响应（慢网仅对这些请求生效） */
-  willOverrideResponse: (matchedInterface) => !!(
-    matchedInterface && (matchedInterface.overrideTxt || matchedInterface.overrideResponseFunc)
-  ),
-  /** 规范化慢网配置片段（全局含 delayMs；组/规则仅看 switchOn） */
+  /** 规范化慢网配置（独立于 Mock） */
   normalizeSlowNetworkConf: (raw) => {
     const src = raw && typeof raw === 'object' ? raw : {}
     const delayMs = Number(src.delayMs)
+    const scopes = Array.isArray(src.scopes) ? src.scopes : []
     return {
       switchOn: !!src.switchOn,
       delayMs: Number.isFinite(delayMs) && delayMs > 0
         ? Math.min(Math.round(delayMs), 60000)
-        : 3000
+        : 3000,
+      scopes
     }
   },
-  /** 全局配置的延迟毫秒（不论全局开关，仅作时间值） */
-  getConfiguredSlowNetworkDelayMs: () => {
-    return ajax_interceptor_qoweifjqon.normalizeSlowNetworkConf(
-      ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_slowNetwork
-    ).delayMs
-  },
-  /**
-   * 命中且会改写响应时的慢网延迟
-   * 优先级：单接口 > 组/域名 > 全局；时间一律用全局 delayMs
-   */
-  getMatchedSlowNetworkDelayMs: (matchedInterface) => {
-    if (!ajax_interceptor_qoweifjqon.willOverrideResponse(matchedInterface)) return 0
-    const delayMs = ajax_interceptor_qoweifjqon.getConfiguredSlowNetworkDelayMs()
-    if (matchedInterface && matchedInterface.slowNetwork && matchedInterface.slowNetwork.switchOn) {
-      return delayMs
-    }
-    const group = ajax_interceptor_qoweifjqon.getGroupById(matchedInterface && matchedInterface.groupId)
-    if (group && group.slowNetwork && group.slowNetwork.switchOn) {
-      return delayMs
-    }
-    const globalConf = ajax_interceptor_qoweifjqon.normalizeSlowNetworkConf(
+  /** 慢网是否应参与劫持挂载（开关开且至少有一个作用域） */
+  shouldApplySlowNetwork: () => {
+    const conf = ajax_interceptor_qoweifjqon.normalizeSlowNetworkConf(
       ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_slowNetwork
     )
-    return globalConf.switchOn ? delayMs : 0
+    return !!(conf.switchOn && conf.scopes.length)
+  },
+  /** 把 xhr.open / fetch 入参收成字符串 */
+  toUrlString: (inputUrl) => {
+    if (inputUrl == null || inputUrl === '') return ''
+    if (typeof URL !== 'undefined' && inputUrl instanceof URL) return inputUrl.href
+    if (typeof Request !== 'undefined' && inputUrl instanceof Request) return inputUrl.url
+    if (typeof inputUrl === 'object' && inputUrl.url) return String(inputUrl.url)
+    return String(inputUrl)
+  },
+  /**
+   * 解析请求 URL（相对路径按当前页补全；结果与地址栏无关，只看这条请求）
+   */
+  parseRequestUrl: (requestUrl) => {
+    const raw = ajax_interceptor_qoweifjqon.toUrlString(requestUrl).trim()
+    if (!raw) return null
+    try {
+      const u = new URL(raw, window.location.href)
+      return {
+        href: u.href,
+        host: u.host.toLowerCase(),
+        hostname: u.hostname.toLowerCase(),
+        pathAndSearch: u.pathname + u.search
+      }
+    } catch (e) {
+      return {
+        href: raw,
+        host: '',
+        hostname: '',
+        pathAndSearch: raw
+      }
+    }
+  },
+  /**
+   * host 匹配：填了才限域名。hostname / host 任一相等即命中
+   * （配置不带端口时，https 默认 443 / 带非默认端口都能靠 hostname 命中）
+   */
+  isHostMatch: (parsed, domain) => {
+    const want = ajax_interceptor_qoweifjqon.normalizeGroupDomain(domain)
+    if (!want) return true
+    if (!parsed) return false
+    const w = want.toLowerCase()
+    return parsed.host === w || parsed.hostname === w
+  },
+  /**
+   * 路径匹配：一律用 pathname+search，并回退完整 href（域名留空/填写行为一致）
+   * match 留空视为全部路径
+   */
+  isPathMatch: (parsed, match, filterType) => {
+    const m = match != null ? String(match).trim() : ''
+    if (!m) return true
+    const pathAndSearch = (parsed && parsed.pathAndSearch) || ''
+    const href = (parsed && parsed.href) || ''
+    if (filterType === 'regex') {
+      try {
+        const re = new RegExp(m, 'i')
+        return !!(pathAndSearch.match(re) || href.match(re))
+      } catch (e) {
+        return false
+      }
+    }
+    const pathNorm = m.startsWith('/') ? m : '/' + m
+    return pathAndSearch.indexOf(m) > -1
+      || pathAndSearch.indexOf(pathNorm) > -1
+      || href.indexOf(m) > -1
+      || href.indexOf(pathNorm) > -1
+  },
+  /**
+   * 统一匹配：看浏览器实际发出的 Request URL，不是前端地址栏
+   * - domain 留空：不限 host
+   * - match 留空：不限路径
+   */
+  matchUrlScope: (requestUrl, scope) => {
+    if (!scope) return false
+    const parsed = ajax_interceptor_qoweifjqon.parseRequestUrl(requestUrl)
+    if (!parsed) return false
+    if (!ajax_interceptor_qoweifjqon.isHostMatch(parsed, scope.domain)) return false
+    return ajax_interceptor_qoweifjqon.isPathMatch(parsed, scope.match, scope.filterType)
+  },
+  /**
+   * 单个慢网作用域是否命中请求
+   */
+  isSlowNetworkScopeMatch: (scope, requestUrl) => {
+    return ajax_interceptor_qoweifjqon.matchUrlScope(requestUrl, scope)
+  },
+  /**
+   * 独立慢网延迟：仅看慢网开关与 scopes，不依赖 Mock / 组 / 规则开关
+   */
+  getSlowNetworkDelayMs: (requestUrl) => {
+    const conf = ajax_interceptor_qoweifjqon.normalizeSlowNetworkConf(
+      ajax_interceptor_qoweifjqon.settings.ajaxInterceptor_slowNetwork
+    )
+    if (!conf.switchOn || !conf.scopes.length) return 0
+    const hit = conf.scopes.some((scope) => (
+      ajax_interceptor_qoweifjqon.isSlowNetworkScopeMatch(scope, requestUrl)
+    ))
+    return hit ? conf.delayMs : 0
   },
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   /**
@@ -95,19 +172,16 @@ let ajax_interceptor_qoweifjqon = {
       scope && Array.isArray(scope.headers) && scope.headers.some((item) => item && String(item.key || '').trim())
     ))
   },
-  /** Mock 或 Headers 任一开启时挂载 XHR/fetch 劫持 */
+  /** Mock / Headers / 慢网任一开启时挂载 XHR/fetch 劫持 */
   shouldInstallHooks: () => {
     return ajax_interceptor_qoweifjqon.isMockSwitchOn()
       || ajax_interceptor_qoweifjqon.shouldApplyGlobalHeaders()
+      || ajax_interceptor_qoweifjqon.shouldApplySlowNetwork()
   },
   /** 从请求 URL 解析 host（失败返回空串） */
   getRequestHost: (requestUrl) => {
-    if (!requestUrl) return ''
-    try {
-      return new URL(requestUrl, window.location.href).host.toLowerCase()
-    } catch (e) {
-      return ''
-    }
+    const parsed = ajax_interceptor_qoweifjqon.parseRequestUrl(requestUrl)
+    return (parsed && parsed.host) || ''
   },
   /**
    * 将配置转为 { key: value }（按请求 URL 过滤域名）
@@ -117,7 +191,7 @@ let ajax_interceptor_qoweifjqon = {
    */
   getGlobalHeadersMap: (requestUrl) => {
     const scopes = ajax_interceptor_qoweifjqon.getGlobalHeaderScopes()
-    const requestHost = ajax_interceptor_qoweifjqon.getRequestHost(requestUrl)
+    const parsed = ajax_interceptor_qoweifjqon.parseRequestUrl(requestUrl)
     const map = {}
     const applyHeaders = (headers) => {
       ;(headers || []).forEach((item) => {
@@ -132,13 +206,12 @@ let ajax_interceptor_qoweifjqon = {
       if (domain) return
       applyHeaders(scope && scope.headers)
     })
-    if (requestHost) {
-      scopes.forEach((scope) => {
-        const domain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(scope && scope.domain)
-        if (!domain || domain !== requestHost) return
-        applyHeaders(scope && scope.headers)
-      })
-    }
+    scopes.forEach((scope) => {
+      const domain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(scope && scope.domain)
+      if (!domain) return
+      if (!ajax_interceptor_qoweifjqon.isHostMatch(parsed, domain)) return
+      applyHeaders(scope && scope.headers)
+    })
     return map
   },
   /** 当前请求是否有匹配到的请求头可注入 */
@@ -215,26 +288,13 @@ let ajax_interceptor_qoweifjqon = {
   /** 组未填域名时不限制；填写后请求 host 须与域名一致 */
   isGroupDomainMatch: (requestUrl, groupId) => {
     const group = ajax_interceptor_qoweifjqon.getGroupById(groupId)
-    const domain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(group && group.domain)
-    if (!domain) return true
-    try {
-      const host = new URL(requestUrl, window.location.href).host.toLowerCase()
-      return host === domain
-    } catch (e) {
-      return false
-    }
+    const parsed = ajax_interceptor_qoweifjqon.parseRequestUrl(requestUrl)
+    return ajax_interceptor_qoweifjqon.isHostMatch(parsed, group && group.domain)
   },
-  /** 组有域名时仅在 pathname+search 上匹配路径；无域名时在完整 URL 上匹配（兼容旧行为） */
-  getRuleMatchTarget: (requestUrl, groupId) => {
-    const group = ajax_interceptor_qoweifjqon.getGroupById(groupId)
-    const domain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(group && group.domain)
-    if (!domain) return requestUrl
-    try {
-      const u = new URL(requestUrl, window.location.href)
-      return u.pathname + u.search
-    } catch (e) {
-      return requestUrl
-    }
+  /** 路径匹配目标：pathname + search */
+  getRuleMatchTarget: (requestUrl) => {
+    const parsed = ajax_interceptor_qoweifjqon.parseRequestUrl(requestUrl)
+    return parsed ? parsed.pathAndSearch : ajax_interceptor_qoweifjqon.toUrlString(requestUrl)
   },
   // 获取匹配到的规则项（仅 Mock 开启时参与匹配）
   getMatchedInterface: ({
@@ -248,31 +308,21 @@ let ajax_interceptor_qoweifjqon = {
       const {
         filterType = 'normal', limitMethod = 'ALL', switchOn = true, match
       } = item
-      if (!match || !switchOn || !ajax_interceptor_qoweifjqon.isRuleGroupOn(item)) {
+      const matchStr = match != null ? String(match).trim() : ''
+      if (!matchStr || !switchOn || !ajax_interceptor_qoweifjqon.isRuleGroupOn(item)) {
         return false
       }
-      if (!ajax_interceptor_qoweifjqon.isGroupDomainMatch(thisRequestUrl, item.groupId)) {
+      const method = (thisMethod || '').toString().toUpperCase()
+      const limit = (limitMethod || 'ALL').toString().toUpperCase()
+      if (limit !== 'ALL' && method !== limit) {
         return false
       }
-      const matchedMethod = thisMethod === limitMethod || limitMethod === 'ALL'
       const group = ajax_interceptor_qoweifjqon.getGroupById(item.groupId)
-      const groupDomain = ajax_interceptor_qoweifjqon.normalizeGroupDomain(group && group.domain)
-      const matchTarget = ajax_interceptor_qoweifjqon.getRuleMatchTarget(thisRequestUrl, item.groupId)
-      let matchedRequest = false
-      if (filterType === 'normal') {
-        if (groupDomain) {
-          const combined = ajax_interceptor_qoweifjqon.joinDomainAndPath(group && group.domain, match)
-          const pathNorm = match.startsWith('/') ? match : '/' + match
-          matchedRequest = thisRequestUrl.indexOf(combined) > -1 ||
-            matchTarget.indexOf(match) > -1 ||
-            matchTarget.indexOf(pathNorm) > -1
-        } else {
-          matchedRequest = matchTarget.indexOf(match) > -1
-        }
-      } else if (filterType === 'regex') {
-        matchedRequest = !!matchTarget.match(new RegExp(match, 'i'))
-      }
-      return matchedMethod && matchedRequest
+      return ajax_interceptor_qoweifjqon.matchUrlScope(thisRequestUrl, {
+        domain: group && group.domain,
+        match: matchStr,
+        filterType
+      })
     })
   },
   // 执行用户输入的函数，如果有错误会抛出到控制台
@@ -353,26 +403,8 @@ let ajax_interceptor_qoweifjqon = {
     return keyValueObj;
   },
   getCompleteUrl: (inputUrl) => {
-    let url = inputUrl.trim()
-    const protocol = window.location.protocol
-    const host = window.location.host
-    const currentUrl = window.location.href
-    try {
-      // 如果解析成功，表示输入是完整的URL，不需要处理
-      new URL(url)
-    } catch (e) {
-      if (url.startsWith("./") || url.startsWith("../")) {
-        // 相对路由
-        url = new URL(url, currentUrl).href
-      } else if (url.startsWith("//")) {
-        // 只缺少协议，补全协议
-        url = protocol + url
-      } else {
-        // 既没有协议也没有域名，补全域名和协议
-        url = protocol + "//" + host + (url.startsWith("/") ? "" : "/") + url
-      }
-    }
-    return url
+    const parsed = ajax_interceptor_qoweifjqon.parseRequestUrl(inputUrl)
+    return parsed ? parsed.href : ajax_interceptor_qoweifjqon.toUrlString(inputUrl)
   },
   originalXHR: window.XMLHttpRequest,
   myXHR: function () {
@@ -445,16 +477,8 @@ let ajax_interceptor_qoweifjqon = {
       if (attr === 'onreadystatechange') {
         xhr.onreadystatechange = (...args) => {
           if (this.readyState === 4) {
-            const deliver = () => {
-              modifyResponse()
-              this.onreadystatechange && this.onreadystatechange.apply(this, args)
-            }
-            const delayMs = ajax_interceptor_qoweifjqon.getMatchedSlowNetworkDelayMs(this._matchedInterface)
-            if (delayMs > 0) {
-              setTimeout(deliver, delayMs)
-            } else {
-              deliver()
-            }
+            modifyResponse()
+            this.onreadystatechange && this.onreadystatechange.apply(this, args)
           } else {
             this.onreadystatechange && this.onreadystatechange.apply(this, args)
           }
@@ -463,16 +487,8 @@ let ajax_interceptor_qoweifjqon = {
         continue
       } else if (attr === 'onload') {
         xhr.onload = (...args) => {
-          const deliver = () => {
-            modifyResponse()
-            this.onload && this.onload.apply(this, args)
-          }
-          const delayMs = ajax_interceptor_qoweifjqon.getMatchedSlowNetworkDelayMs(this._matchedInterface)
-          if (delayMs > 0) {
-            setTimeout(deliver, delayMs)
-          } else {
-            deliver()
-          }
+          modifyResponse()
+          this.onload && this.onload.apply(this, args)
         }
         this.onload = null
         continue
@@ -480,8 +496,9 @@ let ajax_interceptor_qoweifjqon = {
         this.open = (...args) => {
           this._openArgs = args
           const [method, requestUrl] = args
+          this._requestUrl = ajax_interceptor_qoweifjqon.getCompleteUrl(requestUrl)
           this._matchedInterface = ajax_interceptor_qoweifjqon.getMatchedInterface({
-            thisRequestUrl: ajax_interceptor_qoweifjqon.getCompleteUrl(requestUrl),
+            thisRequestUrl: this._requestUrl,
             thisMethod: method
           })
           const matchedInterface = this._matchedInterface
@@ -556,7 +573,23 @@ let ajax_interceptor_qoweifjqon = {
             }
           }
           this._sendArgs = args
-          xhr.send && xhr.send.apply(xhr, args)
+          this._slowSendAborted = false
+          if (this._slowSendTimer) {
+            clearTimeout(this._slowSendTimer)
+            this._slowSendTimer = null
+          }
+          const doSend = () => {
+            this._slowSendTimer = null
+            if (this._slowSendAborted) return
+            xhr.send && xhr.send.apply(xhr, args)
+          }
+          const delayMs = ajax_interceptor_qoweifjqon.getSlowNetworkDelayMs(this._requestUrl || requestUrl)
+          const isAsync = !(this._openArgs && this._openArgs.length > 2 && this._openArgs[2] === false)
+          if (delayMs > 0 && isAsync) {
+            this._slowSendTimer = setTimeout(doSend, delayMs)
+          } else {
+            doSend()
+          }
         }
         continue
       }
@@ -579,6 +612,15 @@ let ajax_interceptor_qoweifjqon = {
           })
         }
       }
+    }
+    const nativeAbort = xhr.abort && xhr.abort.bind(xhr)
+    this.abort = (...abortArgs) => {
+      if (this._slowSendTimer) {
+        clearTimeout(this._slowSendTimer)
+        this._slowSendTimer = null
+      }
+      this._slowSendAborted = true
+      return nativeAbort && nativeAbort(...abortArgs)
     }
   },
   originalFetch: window.fetch.bind(window),
@@ -736,6 +778,15 @@ let ajax_interceptor_qoweifjqon = {
       const headerSource = (data && data.headers) || (typeof requestUrl === 'object' && requestUrl && requestUrl.headers)
       writeFetchHeaders(ajax_interceptor_qoweifjqon.mergeWithGlobalHeaders(headerSource, completeUrl))
     }
+    const delayMsBeforeFetch = ajax_interceptor_qoweifjqon.getSlowNetworkDelayMs(completeUrl)
+    if (delayMsBeforeFetch > 0) {
+      await ajax_interceptor_qoweifjqon.sleep(delayMsBeforeFetch)
+      const signal = (data && data.signal)
+        || (typeof Request !== 'undefined' && args[0] instanceof Request && args[0].signal)
+      if (signal && signal.aborted) {
+        throw new DOMException('The user aborted a request.', 'AbortError')
+      }
+    }
     return ajax_interceptor_qoweifjqon.originalFetch(...args).then(async (response) => {
       if (matchedInterface && (matchedInterface.overrideTxt || matchedInterface.overrideResponseFunc)) {
         let txt = undefined
@@ -791,10 +842,6 @@ let ajax_interceptor_qoweifjqon = {
             overrideStatusText = 'OK'
           }
         }
-        const delayMs = ajax_interceptor_qoweifjqon.getMatchedSlowNetworkDelayMs(matchedInterface)
-        if (delayMs > 0) {
-          await ajax_interceptor_qoweifjqon.sleep(delayMs)
-        }
         txt = overrideResponse !== undefined ? overrideResponse : response.responseText
         const stream = new ReadableStream({
           start(controller) {
@@ -834,68 +881,83 @@ let ajax_interceptor_qoweifjqon = {
           }
         }
         return proxy
-      } else {
-        return response
       }
+      return response
     })
   },
 }
 
+const APPLY_SETTINGS_KEYS = [
+  'ajaxInterceptor_switchOn',
+  'ajaxInterceptor_rules',
+  'ajaxInterceptor_groups',
+  'ajaxInterceptor_globalHeaders',
+  'ajaxInterceptor_slowNetwork'
+]
+
+function installHooks () {
+  // 始终挂上劫持：开关关闭时匹配函数会直接放行。等设置消息才挂的话，本地 SPA 可能已经缓存了原生 XHR/fetch。
+  for (const k in ajax_interceptor_qoweifjqon.originalXHR) {
+    ajax_interceptor_qoweifjqon.myXHR[k] = ajax_interceptor_qoweifjqon.originalXHR[k]
+  }
+  window.XMLHttpRequest = ajax_interceptor_qoweifjqon.myXHR
+  window.fetch = ajax_interceptor_qoweifjqon.myFetch
+}
+
 window.addEventListener("message", function (event) {
   const data = event.data
+  if (!data || typeof data !== 'object') return
+  if (data.type !== 'ajaxInterceptor' || data.to !== 'pageScript') return
 
-  if (data.type === 'ajaxInterceptor' && data.to === 'pageScript') {
-    // ts-mock 预览：在页面环境使用全局 Mock 生成一次随机结果，并回传 content script
-    if (data.action === 'mockPreview') {
-      const { requestId, templateText } = data
-      try {
-        if (typeof Mock === 'undefined') {
-          window.postMessage({
-            type: 'ajaxInterceptor',
-            to: 'content',
-            action: 'mockPreviewResult',
-            requestId,
-            ok: false,
-            error: 'Mock.js 未加载（请刷新页面后重试）'
-          }, '*')
-          return
-        }
-        const template = ajax_interceptor_qoweifjqon.normalizeMockTemplate(JSON.parse(templateText || '{}'))
-        const out = Mock.mock(template)
-        window.postMessage({
-          type: 'ajaxInterceptor',
-          to: 'content',
-          action: 'mockPreviewResult',
-          requestId,
-          ok: true,
-          body: typeof out === 'string' ? out : JSON.stringify(out, null, 2)
-        }, '*')
-      } catch (e) {
+  if (data.action === 'mockPreview') {
+    const { requestId, templateText } = data
+    try {
+      if (typeof Mock === 'undefined') {
         window.postMessage({
           type: 'ajaxInterceptor',
           to: 'content',
           action: 'mockPreviewResult',
           requestId,
           ok: false,
-          error: (e && e.message) ? e.message : String(e)
+          error: 'Mock.js 未加载（请刷新页面后重试）'
         }, '*')
+        return
       }
-      return
+      const template = ajax_interceptor_qoweifjqon.normalizeMockTemplate(JSON.parse(templateText || '{}'))
+      const out = Mock.mock(template)
+      window.postMessage({
+        type: 'ajaxInterceptor',
+        to: 'content',
+        action: 'mockPreviewResult',
+        requestId,
+        ok: true,
+        body: typeof out === 'string' ? out : JSON.stringify(out, null, 2)
+      }, '*')
+    } catch (e) {
+      window.postMessage({
+        type: 'ajaxInterceptor',
+        to: 'content',
+        action: 'mockPreviewResult',
+        requestId,
+        ok: false,
+        error: (e && e.message) ? e.message : String(e)
+      }, '*')
     }
+    return
+  }
 
+  if (data.action === 'applySettings' && data.value && typeof data.value === 'object') {
+    APPLY_SETTINGS_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(data.value, key) && data.value[key] !== undefined) {
+        ajax_interceptor_qoweifjqon.settings[key] = data.value[key]
+      }
+    })
+  } else if (data.key) {
     ajax_interceptor_qoweifjqon.settings[data.key] = data.value
   }
 
-  if (ajax_interceptor_qoweifjqon.shouldInstallHooks()) {
-    // https://github.com/YGYOOO/ajax-interceptor/issues/78
-    // https://github.com/YGYOOO/ajax-interceptor/issues/93
-    for (const k in ajax_interceptor_qoweifjqon.originalXHR) {
-      ajax_interceptor_qoweifjqon.myXHR[k] = ajax_interceptor_qoweifjqon.originalXHR[k]
-    }
-    window.XMLHttpRequest = ajax_interceptor_qoweifjqon.myXHR
-    window.fetch = ajax_interceptor_qoweifjqon.myFetch
-  } else {
-    window.XMLHttpRequest = ajax_interceptor_qoweifjqon.originalXHR
-    window.fetch = ajax_interceptor_qoweifjqon.originalFetch
-  }
+  installHooks()
 }, false)
+
+installHooks()
+

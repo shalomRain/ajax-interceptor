@@ -228,6 +228,7 @@ export const mainHandlerMethods = {
     const src = window.setting.ajaxInterceptor_rules[i]
     const copy = JSON.parse(JSON.stringify(src))
     copy.key = buildUUID()
+    delete copy.slowNetwork
     const srcLabel = src.label == null ? '' : String(src.label).trim()
     copy.label = srcLabel ? `${srcLabel} 副本` : ''
     copy.switchOn = src.switchOn !== false
@@ -263,33 +264,28 @@ export const mainHandlerMethods = {
     this.forceUpdate()
   },
 
-  handleSlowNetworkDelaySecChange (sec) {
-    const current = normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
-    const n = Number(sec)
-    const delayMs = (!Number.isFinite(n) || n <= 0)
-      ? 3000
-      : Math.min(Math.round(n * 1000), 60000)
-    const slowNetwork = { ...current, delayMs }
+  showSlowNetworkModal () {
+    this.setState({
+      slowNetworkModalVisible: true,
+      slowNetwork: normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
+    })
+  },
+
+  handleSlowNetworkChange (next) {
+    this.setState({
+      slowNetwork: normalizeSlowNetwork(next)
+    })
+  },
+
+  handleSlowNetworkCancel () {
+    this.setState({ slowNetworkModalVisible: false })
+  },
+
+  handleSlowNetworkConfirm () {
+    const slowNetwork = normalizeSlowNetwork(this.state.slowNetwork)
     window.setting.ajaxInterceptor_slowNetwork = slowNetwork
     this.set('ajaxInterceptor_slowNetwork', slowNetwork)
-    this.forceUpdate()
-  },
-
-  handleGroupSlowNetworkToggle (groupId) {
-    const g = window.setting.ajaxInterceptor_groups.find((x) => x.id === groupId)
-    if (!g) return
-    const on = !(g.slowNetwork && g.slowNetwork.switchOn)
-    g.slowNetwork = { switchOn: on }
-    this.set('ajaxInterceptor_groups', window.setting.ajaxInterceptor_groups)
-    this.forceUpdate()
-  },
-
-  handleRuleSlowNetworkToggle (i) {
-    const rule = window.setting.ajaxInterceptor_rules[i]
-    if (!rule) return
-    const on = !(rule.slowNetwork && rule.slowNetwork.switchOn)
-    rule.slowNetwork = { switchOn: on }
-    this.set('ajaxInterceptor_rules', window.setting.ajaxInterceptor_rules)
+    this.setState({ slowNetworkModalVisible: false })
     this.forceUpdate()
   },
 
@@ -376,6 +372,7 @@ export const mainHandlerMethods = {
       this.setState({
         customFunction: out.customFunction,
         globalHeaders: normalizeGlobalHeaders(out.ajaxInterceptor_globalHeaders),
+        slowNetwork: normalizeSlowNetwork(out.ajaxInterceptor_slowNetwork),
         showRefreshTip: true,
         settingsRevision: (this.state.settingsRevision || 0) + 1
       }, () => {
