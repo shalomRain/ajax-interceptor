@@ -72,49 +72,41 @@
   background: #e6f7ff;
   color: #1890ff;
 }
-.toolbar-capability-toggle,
+.toolbar-capability-add,
 .toolbar-capability-status {
   border: none;
   background: transparent;
   color: inherit;
   height: 100%;
+  line-height: 22px;
   font-size: 12px;
   cursor: pointer;
+  white-space: nowrap;
+  padding: 0;
   outline: none;
 }
-.toolbar-capability-toggle {
+.toolbar-capability-add {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  padding: 0;
+  width: 22px;
   border-right: 1px solid #d9d9d9;
   flex-shrink: 0;
-  font-size: 13px;
 }
-.toolbar-capability.is-on .toolbar-capability-toggle {
+.toolbar-capability.is-on .toolbar-capability-add {
   border-right-color: #91d5ff;
 }
-.toolbar-capability-toggle:hover {
+.toolbar-capability-add:hover {
   background: rgba(24, 144, 255, .08);
   color: #1890ff;
 }
 .toolbar-capability-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px 0 6px;
-  line-height: 22px;
-  white-space: nowrap;
-}
-.toolbar-capability-status .anticon {
-  font-size: 12px;
+  padding: 0 8px;
 }
 .toolbar-capability.is-on .toolbar-capability-status {
   font-weight: 500;
 }
 .toolbar-capability-status:hover {
-  background: rgba(24, 144, 255, .08);
   color: #1890ff;
 }
 .toolbar-refresh-tip {
