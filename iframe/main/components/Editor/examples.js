@@ -98,6 +98,7 @@ export const RESPONSE_EXAMPLES = [
     egText: `/**
  * Modify response here
  * This example is of JSON type response.
+ * 按 queryParams / requestPayload / orgStatus 返回不同 mock，改条件即可用。
  **/
 
 /* console to see the arguments */
@@ -107,17 +108,38 @@ export const RESPONSE_EXAMPLES = [
 const {
   method,
   payload: {
-    queryParams,
-    requestPayload
+    queryParams,    // URL 查询对象，如 /api?userId=100&page=1 → { userId: '100', page: '1' }；无 query 时可能为 null
+    requestPayload  // 请求体：POST JSON 多为字符串 '{"userId":100}'；GET 时常为 undefined
   },
   orgResponse,
   orgStatus,
   orgStatusText
 } = arguments[0]
 
+console.log('queryParams', queryParams)
+console.log('requestPayload', requestPayload)
+console.log('method / orgStatus', method, orgStatus)
+
+const query = queryParams || {}
+const payloadText = typeof requestPayload === 'string' ? requestPayload : ''
+const httpMethod = String(method || '').toUpperCase()
+
 /* modify response */
-let newResponse = JSON.parse(orgResponse)
-newResponse.message = 'Modify success!'
+let newResponse = {}
+try {
+  newResponse = typeof orgResponse === 'string' ? JSON.parse(orgResponse) : (orgResponse || {})
+} catch (e) {}
+
+/* 按入参、状态返回不同 mock（改下面的条件即可） */
+if (orgStatus >= 400) {
+  newResponse = { code: orgStatus, message: 'mocked error' }
+} else if (query.userId === '100') {
+  newResponse = { code: 0, message: 'ok', data: { userId: 100, name: 'Alice' } }
+} else if (httpMethod === 'POST' && payloadText.includes('keyword')) {
+  newResponse = { code: 0, message: 'ok', list: [] }
+} else {
+  newResponse.message = 'Modify success!'
+}
 
 /* return new response and status */
 return {
@@ -132,6 +154,7 @@ return {
     egText: `/**
  * Modify response here
  * This example is of text type response.
+ * 按 queryParams / requestPayload / orgStatus 返回不同 mock，改条件即可用。
  **/
 
 /* console to see the arguments */
@@ -141,20 +164,32 @@ return {
 const {
   method,
   payload: {
-    queryParams,
-    requestPayload
+    queryParams,    // URL 查询对象，如 /api?userId=100&page=1 → { userId: '100', page: '1' }；无 query 时可能为 null
+    requestPayload  // 请求体：POST 多为字符串；GET 时常为 undefined
   },
   orgResponse,
   orgStatus,
   orgStatusText
 } = arguments[0]
 
+console.log('queryParams', queryParams)
+console.log('requestPayload', requestPayload)
+console.log('method / orgStatus', method, orgStatus)
+
+const query = queryParams || {}
+const payloadText = typeof requestPayload === 'string' ? requestPayload : ''
+const httpMethod = String(method || '').toUpperCase()
+
 /* modify response */
 let newResponse = orgResponse
 
-/* modify only in some cases */
-if (method === 'post') {
-  newResponse = 'Modify success!'
+/* 按入参、状态返回不同 mock（text 需返回字符串；改下面的条件即可） */
+if (orgStatus >= 400) {
+  newResponse = 'mocked error'
+} else if (query.userId === '100') {
+  newResponse = JSON.stringify({ userId: 100, name: 'Alice' })
+} else if (httpMethod === 'POST' && payloadText.includes('keyword')) {
+  newResponse = JSON.stringify({ result: 'ok', message: '操作成功' })
 }
 
 /* return new response and status */
