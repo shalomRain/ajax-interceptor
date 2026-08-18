@@ -131,7 +131,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       })
     }
     // 用消息里的最新值合并计算，避免 storage.set 尚未完成时读到旧状态
-    if (msg.key === 'ajaxInterceptor_switchOn' || msg.key === 'ajaxInterceptor_globalHeaders') {
+    if (
+      msg.key === 'ajaxInterceptor_switchOn'
+      || msg.key === 'ajaxInterceptor_globalHeaders'
+      || msg.key === 'ajaxInterceptor_slowNetwork'
+    ) {
       updateActionIcon({ [msg.key]: msg.value })
     }
     if (msg.key === 'customFunction') {
@@ -171,16 +175,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 })
 
-/** 图标作总状态：Mock 开关或 Headers 开关任一为开 → 亮；都关 → 暗 */
+/** 图标作总状态：Mock / Headers / 慢网任一为开 → 亮；都关 → 暗 */
 function isAnyCapabilityActive (result) {
   const mockOn = !!result.ajaxInterceptor_switchOn
   const gh = result.ajaxInterceptor_globalHeaders
   const headersOn = !!(gh && gh.switchOn)
-  return mockOn || headersOn
+  const sn = result.ajaxInterceptor_slowNetwork
+  const slowNetworkOn = !!(sn && sn.switchOn)
+  return mockOn || headersOn || slowNetworkOn
 }
 
 function updateActionIcon (override = {}) {
-  chrome.storage.local.get(['ajaxInterceptor_switchOn', 'ajaxInterceptor_globalHeaders'], (result) => {
+  chrome.storage.local.get([
+    'ajaxInterceptor_switchOn',
+    'ajaxInterceptor_globalHeaders',
+    'ajaxInterceptor_slowNetwork'
+  ], (result) => {
     const merged = { ...result, ...override }
     if (isAnyCapabilityActive(merged)) {
       chrome.action.setIcon({
@@ -207,7 +217,11 @@ function updateActionIcon (override = {}) {
 // storage 落盘后再校准一次，防止只写 storage、未走消息时图标不同步（如导入配置）
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local') return
-  if (changes.ajaxInterceptor_switchOn || changes.ajaxInterceptor_globalHeaders) {
+  if (
+    changes.ajaxInterceptor_switchOn
+    || changes.ajaxInterceptor_globalHeaders
+    || changes.ajaxInterceptor_slowNetwork
+  ) {
     updateActionIcon()
   }
 })
