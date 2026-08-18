@@ -93,7 +93,7 @@ export const mainHandlerMethods = {
   },
 
   handleAddGroup () {
-    window.setting.ajaxInterceptor_groups.push({
+    window.setting.ajaxInterceptor_groups.unshift({
       id: buildUUID(),
       name: '',
       domain: '',
