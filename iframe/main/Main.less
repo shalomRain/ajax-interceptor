@@ -196,9 +196,9 @@
   position: relative;
   z-index: 0;
 }
-.rule-match-compact .rule-match-input:hover,
-.rule-match-compact .rule-match-input:focus {
-  /* 仅换色并抬层盖住 Select 右边框，不改宽度 */
+.rule-match-compact .rule-match-input:not(.ant-input-disabled):not([disabled]):hover,
+.rule-match-compact .rule-match-input:not(.ant-input-disabled):not([disabled]):focus {
+  /* 仅换色并抬层盖住 Select 右边框，不改宽度；禁用态不响应 */
   border-left-color: #40a9ff !important;
   z-index: 1;
 }
