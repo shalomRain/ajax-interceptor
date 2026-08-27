@@ -1,5 +1,6 @@
 import React from 'react'
 import { Icon, Dropdown, Menu } from 'antd'
+import { getScrollPopupContainer } from '../utils/mainHelpers'
 
 function CapabilityButton ({
   isOn,
@@ -98,7 +99,12 @@ export default function MainToolbar ({
         />
       </div>
       <div className="main-toolbar-right">
-        <Dropdown overlay={toolsMenu} trigger={['click']} placement="bottomRight">
+        <Dropdown
+          overlay={toolsMenu}
+          trigger={['click']}
+          placement="bottomRight"
+          getPopupContainer={getScrollPopupContainer}
+        >
           <button type="button" className="toolbar-tools-btn" title="备份与设置">
             <Icon type="ellipsis" />
             <span>更多</span>

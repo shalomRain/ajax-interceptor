@@ -11,6 +11,7 @@ import {
   RESPONSE_TS_MOCK_EXAMPLES
 } from '../Editor/examples'
 import { tsInterfacesToMockTemplate } from '../../utils/tsInterfaceToMockTemplate'
+import { getScrollPopupContainer } from '../../utils/mainHelpers'
 import { addExtensionMessageListener, sendToExtensionRuntime, getExtensionRuntime } from '../../extensionApi'
 
 import './index.less'
@@ -295,7 +296,12 @@ export default class Index extends Component {
           {showPlainJson ? (
             <>
               <span className="replace-mode-label">响应内容</span>
-              <Dropdown overlay={modeMenu} trigger={['click']} disabled={ro}>
+              <Dropdown
+                overlay={modeMenu}
+                trigger={['click']}
+                disabled={ro}
+                getPopupContainer={getScrollPopupContainer}
+              >
                 <button type="button" className="replace-mode-switch-link" disabled={ro}>
                   {REPLACE_MODE_LABELS.json}
                   <Icon type="down" style={{ fontSize: 10, marginLeft: 4 }} />

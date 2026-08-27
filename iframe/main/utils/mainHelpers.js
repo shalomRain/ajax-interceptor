@@ -66,3 +66,18 @@ export function buildRuleMatchUrlDisplay (match, groupDomain = '', filterType = 
   const pathShow = m.startsWith('/') ? m : `/${m}`
   return `任意域名 — URL 包含路径片段「${pathShow}」`
 }
+
+/** Dropdown 挂到触发按钮所在的滚动容器，避免滚动时菜单与按钮脱节 */
+export function getScrollPopupContainer (triggerNode) {
+  let el = triggerNode
+  while (el && el !== document.documentElement) {
+    if (el.nodeType === 1) {
+      const { overflow, overflowY } = window.getComputedStyle(el)
+      if (/(auto|scroll|overlay)/.test(overflowY) || /(auto|scroll|overlay)/.test(overflow)) {
+        return el
+      }
+    }
+    el = el.parentElement
+  }
+  return document.getElementById('main') || document.body
+}

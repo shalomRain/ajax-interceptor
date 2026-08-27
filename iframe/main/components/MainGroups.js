@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { Collapse, Input, Select, Button, Switch, Icon, Dropdown, Menu } from 'antd'
 import Replacer from './Replacer'
+import { getScrollPopupContainer } from '../utils/mainHelpers'
 
 const { Option } = Select
 const Panel = Collapse.Panel
@@ -206,7 +207,12 @@ function GroupPanelHeader ({
             {moreMenuItems[0].label}
           </Button>
         ) : (
-          <Dropdown overlay={moreMenu} trigger={['click']} placement="bottomRight">
+          <Dropdown
+            overlay={moreMenu}
+            trigger={['click']}
+            placement="bottomRight"
+            getPopupContainer={getScrollPopupContainer}
+          >
             <Button
               type="link"
               size="small"
@@ -466,6 +472,7 @@ export default function MainGroups ({
                                   overlay={ruleMoreMenu}
                                   trigger={['click']}
                                   placement="bottomRight"
+                                  getPopupContainer={getScrollPopupContainer}
                                 >
                                   <Button
                                     type="link"
