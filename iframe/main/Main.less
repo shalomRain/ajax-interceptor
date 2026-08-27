@@ -330,8 +330,39 @@ body.group-drag-pressing * {
   line-height: 24px;
   color: #8c8c8c !important;
 }
-.header-more-btn:hover {
+.header-more-btn:not(.ant-btn-disabled):not([disabled]):hover {
   color: #1890ff !important;
+}
+.header-more-btn.ant-btn-disabled,
+.header-more-btn[disabled] {
+  color: rgba(0, 0, 0, 0.25) !important;
+  &:hover,
+  &:focus {
+    color: rgba(0, 0, 0, 0.25) !important;
+  }
+}
+.group-toolbar-btn-danger.ant-btn-default {
+  color: #cf1322;
+  border-color: #ffa39e;
+  &:not(.ant-btn-disabled):not([disabled]) {
+    &:hover,
+    &:focus {
+      color: #a8071a;
+      border-color: #ff7875;
+    }
+    &:active,
+    &.active {
+      color: #820014;
+      border-color: #cf1322;
+    }
+  }
+  &.ant-btn-disabled,
+  &[disabled] {
+    color: rgba(207, 19, 34, 0.38);
+    border-color: rgba(207, 19, 34, 0.28);
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+  }
 }
 .rule-group--disabled {
   background: #f0f0f0;
@@ -629,24 +660,28 @@ body.group-drag-pressing * {
 .ant-dropdown-menu-submenu-title {
   color: rgba(0, 0, 0, 0.65);
 }
-.ant-dropdown-menu-item:hover,
-.ant-dropdown-menu-submenu-title:hover,
-.ant-dropdown-menu-item-active {
+.ant-dropdown-menu-item:not(.ant-dropdown-menu-item-disabled):hover,
+.ant-dropdown-menu-submenu-title:not(.ant-dropdown-menu-item-disabled):hover,
+.ant-dropdown-menu-item-active:not(.ant-dropdown-menu-item-disabled) {
   background-color: #e6f7ff;
   color: rgba(0, 0, 0, 0.85);
 }
 .ant-dropdown-menu-item-disabled,
-.ant-dropdown-menu-item-disabled:hover {
+.ant-dropdown-menu-item-disabled:hover,
+.ant-dropdown-menu-item-disabled.ant-dropdown-menu-item-active {
   color: rgba(0, 0, 0, 0.25);
   background-color: transparent;
+  cursor: not-allowed;
 }
 .ant-dropdown-menu-item .menu-item-danger {
   color: #cf1322;
 }
-.ant-dropdown-menu-item:hover .menu-item-danger,
-.ant-dropdown-menu-item-active .menu-item-danger {
+.ant-dropdown-menu-item:not(.ant-dropdown-menu-item-disabled):hover .menu-item-danger,
+.ant-dropdown-menu-item-active:not(.ant-dropdown-menu-item-disabled) .menu-item-danger {
   color: #a8071a;
 }
-.ant-dropdown-menu-item-disabled .menu-item-danger {
-  color: rgba(0, 0, 0, 0.25);
+.ant-dropdown-menu-item-disabled .menu-item-danger,
+.ant-dropdown-menu-item-disabled:hover .menu-item-danger,
+.ant-dropdown-menu-item-disabled.ant-dropdown-menu-item-active .menu-item-danger {
+  color: rgba(207, 19, 34, 0.38);
 }

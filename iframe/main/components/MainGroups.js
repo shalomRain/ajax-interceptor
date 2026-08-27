@@ -128,19 +128,29 @@ function GroupPanelHeader ({
   onDragMove,
   onDragEnd
 }) {
+  const handleMoreMenuClick = (key, domEvent) => {
+    if (domEvent) {
+      domEvent.stopPropagation()
+      domEvent.preventDefault()
+    }
+    if (key === 'remove') onRemoveGroup(group.id)
+  }
+
+  const moreMenuItems = [
+    { key: 'remove', label: '删除本组', danger: true }
+  ]
+
   const moreMenu = (
-    <Menu
-      onClick={({ key, domEvent }) => {
-        if (domEvent) {
-          domEvent.stopPropagation()
-          domEvent.preventDefault()
-        }
-        if (key === 'remove') onRemoveGroup(group.id)
-      }}
-    >
-      <Menu.Item key="remove">
-        <span className="menu-item-danger">删除本组</span>
-      </Menu.Item>
+    <Menu onClick={({ key, domEvent }) => handleMoreMenuClick(key, domEvent)}>
+      {moreMenuItems.map(item => (
+        <Menu.Item key={item.key}>
+          {item.danger ? (
+            <span className="menu-item-danger">{item.label}</span>
+          ) : (
+            item.label
+          )}
+        </Menu.Item>
+      ))}
     </Menu>
   )
 
@@ -177,9 +187,6 @@ function GroupPanelHeader ({
           onChange={val => onGroupSwitchChange(val, group.id)}
           className="group-toolbar-switch"
         />
-        {groupDisabled ? (
-          <span className="group-disabled-badge">已关闭</span>
-        ) : null}
         <Button
           type="dashed"
           size="small"
@@ -188,17 +195,29 @@ function GroupPanelHeader ({
         >
           + 规则
         </Button>
-        <Dropdown overlay={moreMenu} trigger={['click']} placement="bottomRight">
+        {moreMenuItems.length === 1 ? (
           <Button
-            type="link"
+            type="default"
             size="small"
-            className="header-more-btn"
-            title="更多"
-            onClick={e => e.stopPropagation()}
+            className={moreMenuItems[0].danger ? 'group-toolbar-btn-danger' : ''}
+            onClick={e => handleMoreMenuClick(moreMenuItems[0].key, e)}
+            disabled={groupDisabled}
           >
-            <Icon type="ellipsis" />
+            {moreMenuItems[0].label}
           </Button>
-        </Dropdown>
+        ) : (
+          <Dropdown overlay={moreMenu} trigger={['click']} placement="bottomRight">
+            <Button
+              type="link"
+              size="small"
+              className="header-more-btn"
+              title="更多"
+              onClick={e => e.stopPropagation()}
+            >
+              <Icon type="ellipsis" />
+            </Button>
+          </Dropdown>
+        )}
       </div>
     </div>
   )
