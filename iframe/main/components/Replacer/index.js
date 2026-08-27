@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Select, Radio, Button, Modal, Dropdown, Menu, Icon } from 'antd'
+import { Select, Radio, Button, Modal } from 'antd'
 import MonacoEditor from '../Editor'
 import MatchUrlPreview from '../MatchUrlPreview'
 import {
@@ -11,19 +11,11 @@ import {
   RESPONSE_TS_MOCK_EXAMPLES
 } from '../Editor/examples'
 import { tsInterfacesToMockTemplate } from '../../utils/tsInterfaceToMockTemplate'
-import { getScrollPopupContainer } from '../../utils/mainHelpers'
 import { addExtensionMessageListener, sendToExtensionRuntime, getExtensionRuntime } from '../../extensionApi'
 
 import './index.less'
 
 const REPLACE_MODES = ['json', 'advanced', 'mockjs', 'ts-mock']
-
-const REPLACE_MODE_LABELS = {
-  json: '普通 JSON',
-  advanced: 'Advanced',
-  mockjs: 'Mock.js',
-  'ts-mock': 'ts-mock'
-}
 
 function getRuleReplaceMode(rule) {
   const m = rule && rule.replaceMode
@@ -255,19 +247,6 @@ export default class Index extends Component {
     const showTsMock = replaceMode === 'ts-mock'
     const rule = window.setting.ajaxInterceptor_rules[this.props.index]
 
-    const modeMenu = (
-      <Menu
-        selectedKeys={[replaceMode]}
-        onClick={({ key }) => this.handleReplaceModeChange(key)}
-      >
-        {REPLACE_MODES.map((mode) => (
-          <Menu.Item key={mode} disabled={ro}>
-            {REPLACE_MODE_LABELS[mode]}
-          </Menu.Item>
-        ))}
-      </Menu>
-    )
-
     return (
       <>
         <div className="rule-expand-meta">
@@ -292,55 +271,36 @@ export default class Index extends Component {
             />
           )}
         </div>
-        <div className={`replace-mode-row${showPlainJson ? ' replace-mode-row--simple' : ''}`}>
-          {showPlainJson ? (
-            <>
-              <span className="replace-mode-label">响应内容</span>
-              <Dropdown
-                overlay={modeMenu}
-                trigger={['click']}
-                disabled={ro}
-                getPopupContainer={getScrollPopupContainer}
-              >
-                <button type="button" className="replace-mode-switch-link" disabled={ro}>
-                  {REPLACE_MODE_LABELS.json}
-                  <Icon type="down" style={{ fontSize: 10, marginLeft: 4 }} />
-                </button>
-              </Dropdown>
-            </>
-          ) : (
-            <>
-              <span className="replace-mode-label">替换模式</span>
-              <Select
-                size="small"
-                className="replace-mode-select"
-                value={replaceMode}
-                onChange={this.handleReplaceModeChange}
-                disabled={ro}
-              >
-                <Select.Option value="json">普通 JSON</Select.Option>
-                <Select.Option value="advanced">Advanced Mode</Select.Option>
-                <Select.Option value="mockjs">Mock.js</Select.Option>
-                <Select.Option value="ts-mock">ts-mock</Select.Option>
-              </Select>
-              {(showTsMock || showMockjs) && (
-                <div className="replace-mode-actions">
-                  {showMockjs && (
-                    <Button size="small" disabled={ro} onClick={this.openMockjsTsModal}>
-                      从 TS 生成模板
-                    </Button>
-                  )}
-                  <Button
-                    type="primary"
-                    size="small"
-                    disabled={ro}
-                    onClick={showTsMock ? this.handleTsMockPreview : this.handleMockjsPreview}
-                  >
-                    预览 Mock 结果
-                  </Button>
-                </div>
+        <div className="replace-mode-row">
+          <span className="replace-mode-label">替换模式</span>
+          <Select
+            size="small"
+            className="replace-mode-select"
+            value={replaceMode}
+            onChange={this.handleReplaceModeChange}
+            disabled={ro}
+          >
+            <Select.Option value="json">普通 JSON</Select.Option>
+            <Select.Option value="advanced">Advanced Mode</Select.Option>
+            <Select.Option value="mockjs">Mock.js</Select.Option>
+            <Select.Option value="ts-mock">ts-mock</Select.Option>
+          </Select>
+          {(showTsMock || showMockjs) && (
+            <div className="replace-mode-actions">
+              {showMockjs && (
+                <Button size="small" disabled={ro} onClick={this.openMockjsTsModal}>
+                  从 TS 生成模板
+                </Button>
               )}
-            </>
+              <Button
+                type="primary"
+                size="small"
+                disabled={ro}
+                onClick={showTsMock ? this.handleTsMockPreview : this.handleMockjsPreview}
+              >
+                预览 Mock 结果
+              </Button>
+            </div>
           )}
         </div>
         {
