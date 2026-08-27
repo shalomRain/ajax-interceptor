@@ -156,7 +156,7 @@ function GroupPanelHeader ({
   )
 
   return (
-    <div className="group-panel-header" onClick={e => e.stopPropagation()}>
+    <div className="group-panel-header">
       <GroupExpandIcon
         isActive={isExpanded}
         groupId={group.id}
@@ -165,7 +165,7 @@ function GroupPanelHeader ({
         onDragMove={onDragMove}
         onDragEnd={onDragEnd}
       />
-      <div className="group-toolbar">
+      <div className="group-toolbar" onClick={e => e.stopPropagation()}>
         <Input
           placeholder="组名（如：项目A / 版本2）"
           value={group.name}

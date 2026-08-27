@@ -279,6 +279,7 @@
   height: 32px;
   margin-top: 0;
   color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
   user-select: none;
   touch-action: none;
 }
@@ -296,11 +297,14 @@ body.group-drag-pressing * {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  flex: 1;
+  /* 按内容定宽，右侧剩余空间留给 Collapse header 热区 */
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: calc(100% - 14px - 8px - 32px); /* 拖拽柄 + gap + 最小热区 */
   margin-bottom: 0;
   padding-bottom: 0;
   gap: 4px 6px;
+  cursor: default;
 }
 .group-outer-collapse > .ant-collapse-item > .ant-collapse-content > .ant-collapse-content-box {
   padding: 0;
@@ -315,7 +319,7 @@ body.group-drag-pressing * {
 .group-domain-input {
   max-width: 220px;
   min-width: 120px;
-  flex: 1 1 140px;
+  flex: 0 1 140px;
 }
 .group-toolbar-label {
   font-size: 12px;
