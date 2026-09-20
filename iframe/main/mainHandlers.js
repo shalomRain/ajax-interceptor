@@ -7,6 +7,8 @@ import {
   buildBackupPayload,
   parseBackupFile,
   ensureGroupsMigrated,
+  normalizeGlobalHeaders,
+  normalizeSlowNetwork,
   pickSettingData
 } from './utils/settingStorage'
 
@@ -91,7 +93,7 @@ export const mainHandlerMethods = {
   },
 
   handleAddGroup () {
-    window.setting.ajaxInterceptor_groups.push({
+    window.setting.ajaxInterceptor_groups.unshift({
       id: buildUUID(),
       name: '',
       domain: '',
@@ -226,6 +228,7 @@ export const mainHandlerMethods = {
     const src = window.setting.ajaxInterceptor_rules[i]
     const copy = JSON.parse(JSON.stringify(src))
     copy.key = buildUUID()
+    delete copy.slowNetwork
     const srcLabel = src.label == null ? '' : String(src.label).trim()
     copy.label = srcLabel ? `${srcLabel} 副本` : ''
     copy.switchOn = src.switchOn !== false
@@ -245,10 +248,51 @@ export const mainHandlerMethods = {
     this.forceUpdate()
   },
 
+  handleGlobalHeadersSwitchChange () {
+    const current = normalizeGlobalHeaders(window.setting.ajaxInterceptor_globalHeaders)
+    const globalHeaders = { ...current, switchOn: !current.switchOn }
+    window.setting.ajaxInterceptor_globalHeaders = globalHeaders
+    this.set('ajaxInterceptor_globalHeaders', globalHeaders)
+    this.forceUpdate()
+  },
+
+  handleSlowNetworkSwitchChange () {
+    const current = normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
+    const slowNetwork = { ...current, switchOn: !current.switchOn }
+    window.setting.ajaxInterceptor_slowNetwork = slowNetwork
+    this.set('ajaxInterceptor_slowNetwork', slowNetwork)
+    this.forceUpdate()
+  },
+
+  showSlowNetworkModal () {
+    this.setState({
+      slowNetworkModalVisible: true,
+      slowNetwork: normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
+    })
+  },
+
+  handleSlowNetworkChange (next) {
+    this.setState({
+      slowNetwork: normalizeSlowNetwork(next)
+    })
+  },
+
+  handleSlowNetworkCancel () {
+    this.setState({ slowNetworkModalVisible: false })
+  },
+
+  handleSlowNetworkConfirm () {
+    const slowNetwork = normalizeSlowNetwork(this.state.slowNetwork)
+    window.setting.ajaxInterceptor_slowNetwork = slowNetwork
+    this.set('ajaxInterceptor_slowNetwork', slowNetwork)
+    this.setState({ slowNetworkModalVisible: false })
+    this.forceUpdate()
+  },
+
   showSettingModal () {
     this.setState({
       settingModalVisible: true,
-      customFunction: window.setting.customFunction
+      customFunction: { ...(window.setting.customFunction || {}) }
     })
   },
 
@@ -267,6 +311,30 @@ export const mainHandlerMethods = {
         panelPosition: e.target.value
       }
     })
+  },
+
+  showGlobalHeadersModal () {
+    this.setState({
+      globalHeadersModalVisible: true,
+      globalHeaders: normalizeGlobalHeaders(window.setting.ajaxInterceptor_globalHeaders)
+    })
+  },
+
+  handleGlobalHeadersChange (next) {
+    this.setState({
+      globalHeaders: normalizeGlobalHeaders(next)
+    })
+  },
+
+  handleGlobalHeadersCancel () {
+    this.setState({ globalHeadersModalVisible: false })
+  },
+
+  handleGlobalHeadersConfirm () {
+    const globalHeaders = normalizeGlobalHeaders(this.state.globalHeaders)
+    window.setting.ajaxInterceptor_globalHeaders = globalHeaders
+    this.set('ajaxInterceptor_globalHeaders', globalHeaders)
+    this.setState({ globalHeadersModalVisible: false })
   },
 
   showImageModal (pClass) {
@@ -303,6 +371,8 @@ export const mainHandlerMethods = {
       })
       this.setState({
         customFunction: out.customFunction,
+        globalHeaders: normalizeGlobalHeaders(out.ajaxInterceptor_globalHeaders),
+        slowNetwork: normalizeSlowNetwork(out.ajaxInterceptor_slowNetwork),
         showRefreshTip: true,
         settingsRevision: (this.state.settingsRevision || 0) + 1
       }, () => {

@@ -1,15 +1,27 @@
 import React from 'react'
 import { Modal, Button, Radio, Icon } from 'antd'
+import GlobalHeadersEditor from './GlobalHeadersEditor'
+import SlowNetworkEditor from './SlowNetworkEditor'
 
 export default function MainModals ({
   settingModalVisible,
+  globalHeadersModalVisible,
+  slowNetworkModalVisible,
   infoModalVisible,
   imageModalVisible,
   customFunction,
+  globalHeaders,
+  slowNetwork,
   positionClass,
   onSettingCancel,
   onSettingConfirm,
   onPositionChange,
+  onGlobalHeadersChange,
+  onGlobalHeadersCancel,
+  onGlobalHeadersConfirm,
+  onSlowNetworkChange,
+  onSlowNetworkCancel,
+  onSlowNetworkConfirm,
   onShowImageModal,
   onImageModalClose,
   onInfoModalClose
@@ -30,7 +42,7 @@ export default function MainModals ({
           </Button>,
         ]}
       >
-        <div>
+        <div className="settings-section">
           <span>Position:</span>
           <Radio.Group
             onChange={onPositionChange}
@@ -47,6 +59,44 @@ export default function MainModals ({
             </Radio>
           </Radio.Group>
         </div>
+      </Modal>
+      <Modal
+        visible={globalHeadersModalVisible}
+        title="Request Headers"
+        width="640px"
+        onCancel={onGlobalHeadersCancel}
+        footer={[
+          <Button key="Cancel" onClick={onGlobalHeadersCancel}>
+            Cancel
+          </Button>,
+          <Button key="Submit" type="primary" onClick={onGlobalHeadersConfirm}>
+            Submit
+          </Button>,
+        ]}
+      >
+        <GlobalHeadersEditor
+          value={globalHeaders}
+          onChange={onGlobalHeadersChange}
+        />
+      </Modal>
+      <Modal
+        visible={slowNetworkModalVisible}
+        title="Slow Network"
+        width="640px"
+        onCancel={onSlowNetworkCancel}
+        footer={[
+          <Button key="Cancel" onClick={onSlowNetworkCancel}>
+            Cancel
+          </Button>,
+          <Button key="Submit" type="primary" onClick={onSlowNetworkConfirm}>
+            Submit
+          </Button>,
+        ]}
+      >
+        <SlowNetworkEditor
+          value={slowNetwork}
+          onChange={onSlowNetworkChange}
+        />
       </Modal>
       <Modal
         visible={infoModalVisible}

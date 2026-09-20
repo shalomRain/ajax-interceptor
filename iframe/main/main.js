@@ -5,6 +5,15 @@ import { bindMainHandlers } from './mainHandlers'
 import MainToolbar from './components/MainToolbar'
 import MainGroups from './components/MainGroups'
 import MainModals from './components/MainModals'
+import {
+  getGlobalHeadersStatusLabel,
+  getMockStatusLabel,
+  getSlowNetworkStatusLabel,
+  isGlobalHeadersActive,
+  isSlowNetworkActive,
+  normalizeGlobalHeaders,
+  normalizeSlowNetwork
+} from './utils/settingStorage'
 import './Main.less'
 
 export default class Main extends Component {
@@ -29,11 +38,22 @@ export default class Main extends Component {
 
   state = {
     settingModalVisible: false,
+    globalHeadersModalVisible: false,
+    slowNetworkModalVisible: false,
     imageModalVisible: false,
     infoModalVisible: false,
     positionClass: 'suspend',
     customFunction: {
       panelPosition: 0
+    },
+    globalHeaders: {
+      switchOn: false,
+      scopes: []
+    },
+    slowNetwork: {
+      switchOn: false,
+      delayMs: 3000,
+      scopes: []
     },
     showRefreshTip: false,
     settingsRevision: 0
@@ -49,7 +69,13 @@ export default class Main extends Component {
   }
 
   render () {
-    const switchOn = window.setting.ajaxInterceptor_switchOn
+    const mockOn = !!window.setting.ajaxInterceptor_switchOn
+    const rules = window.setting.ajaxInterceptor_rules || []
+    const groups = window.setting.ajaxInterceptor_groups || []
+    const savedGlobalHeaders = normalizeGlobalHeaders(window.setting.ajaxInterceptor_globalHeaders)
+    const globalHeadersOn = isGlobalHeadersActive(savedGlobalHeaders)
+    const savedSlowNetwork = normalizeSlowNetwork(window.setting.ajaxInterceptor_slowNetwork)
+    const slowNetworkOn = isSlowNetworkActive(savedSlowNetwork)
     return (
       <div className="ajax-modifier-main">
         <input
@@ -60,21 +86,32 @@ export default class Main extends Component {
           onChange={this.handleImportBackupFile}
         />
         <MainToolbar
-          switchOn={switchOn}
-          expandAllActive={this.isAllExpanded()}
-          showRefreshTip={this.state.showRefreshTip}
-          onSwitchChange={this.handleSwitchChange}
-          onExpandCollapseAll={this.handleExpandCollapseAll}
+          mockOn={mockOn}
+          mockLabel={getMockStatusLabel(mockOn, rules, groups)}
+          globalHeadersOn={globalHeadersOn}
+          globalHeadersLabel={getGlobalHeadersStatusLabel(savedGlobalHeaders)}
+          slowNetworkOn={slowNetworkOn}
+          slowNetworkLabel={getSlowNetworkStatusLabel(savedSlowNetwork)}
+          onToggleMock={this.handleSwitchChange}
           onAddGroup={this.handleAddGroup}
+          onToggleGlobalHeaders={this.handleGlobalHeadersSwitchChange}
+          onOpenGlobalHeaders={this.showGlobalHeadersModal}
+          onToggleSlowNetwork={this.handleSlowNetworkSwitchChange}
+          onOpenSlowNetwork={this.showSlowNetworkModal}
           onOpenSettings={this.showSettingModal}
           onExportBackup={this.handleExportBackup}
           onImportBackup={this.handleImportBackupClick}
         />
-        <div className={switchOn ? 'setting-body' : 'setting-body setting-body-hidden'}>
+        {this.state.showRefreshTip && (
+          <div className="toolbar-refresh-tip">请刷新业务页面使配置生效</div>
+        )}
+        <div className="setting-body">
           <MainGroups
             key={this.state.settingsRevision}
             settingsRevision={this.state.settingsRevision}
-            switchOn={switchOn}
+            switchOn={mockOn}
+            expandAllActive={this.isAllExpanded()}
+            onExpandCollapseAll={this.handleExpandCollapseAll}
             groups={window.setting.ajaxInterceptor_groups}
             rules={window.setting.ajaxInterceptor_rules}
             onGroupNameChange={this.handleGroupNameChange}
@@ -99,13 +136,23 @@ export default class Main extends Component {
         </div>
         <MainModals
           settingModalVisible={this.state.settingModalVisible}
+          globalHeadersModalVisible={this.state.globalHeadersModalVisible}
+          slowNetworkModalVisible={this.state.slowNetworkModalVisible}
           infoModalVisible={this.state.infoModalVisible}
           imageModalVisible={this.state.imageModalVisible}
           customFunction={this.state.customFunction}
+          globalHeaders={this.state.globalHeaders}
+          slowNetwork={this.state.slowNetwork}
           positionClass={this.state.positionClass}
           onSettingCancel={this.handleSettingModalCancel}
           onSettingConfirm={this.handleSettingModalConfirm}
           onPositionChange={this.handlePositionChange}
+          onGlobalHeadersChange={this.handleGlobalHeadersChange}
+          onGlobalHeadersCancel={this.handleGlobalHeadersCancel}
+          onGlobalHeadersConfirm={this.handleGlobalHeadersConfirm}
+          onSlowNetworkChange={this.handleSlowNetworkChange}
+          onSlowNetworkCancel={this.handleSlowNetworkCancel}
+          onSlowNetworkConfirm={this.handleSlowNetworkConfirm}
           onShowImageModal={this.showImageModal}
           onImageModalClose={this.handleImageModalClose}
           onInfoModalClose={this.handleInfoModalClose}

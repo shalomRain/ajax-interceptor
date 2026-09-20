@@ -1,6 +1,7 @@
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Select, Dropdown, Icon, Menu } from 'antd'
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api'
+import { getScrollPopupContainer } from '../../utils/mainHelpers'
 import './index.less'
 
 const MonacoEditor = (props, ref) => {
@@ -136,7 +137,8 @@ const MonacoEditor = (props, ref) => {
       }}>
         {
           examples.length > 1 ? <Dropdown overlay={menu} visible={dropVisible} trigger={['click', 'hover']}
-                                          onVisibleChange={handleVisibleChange}>
+                                          onVisibleChange={handleVisibleChange}
+                                          getPopupContainer={getScrollPopupContainer}>
             <a onClick={(e) => e.preventDefault()}>
               <div className="border-button">
                 <span>Example</span>

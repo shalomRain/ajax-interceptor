@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import { Select, Radio, Button, Modal } from 'antd'
 import MonacoEditor from '../Editor'
+import MatchUrlPreview from '../MatchUrlPreview'
 import {
   REQUEST_PAYLOAD_EXAMPLES,
   HEADERS_EXAMPLES,
@@ -248,6 +249,28 @@ export default class Index extends Component {
 
     return (
       <>
+        <div className="rule-expand-meta">
+          <div className="rule-expand-meta-row">
+            <span className="rule-expand-meta-label">匹配方式</span>
+            <Select
+              size="small"
+              value={this.props.filterType || 'normal'}
+              style={{ width: 100 }}
+              onChange={(val) => this.props.onFilterTypeChange && this.props.onFilterTypeChange(val, this.props.index)}
+              disabled={ro}
+            >
+              <Select.Option value="normal">normal</Select.Option>
+              <Select.Option value="regex">regex</Select.Option>
+            </Select>
+          </div>
+          {this.props.groupId != null && (
+            <MatchUrlPreview
+              groupId={this.props.groupId}
+              ruleIndex={this.props.index}
+              settingsRevision={this.props.settingsRevision}
+            />
+          )}
+        </div>
         <div className="replace-mode-row">
           <span className="replace-mode-label">替换模式</span>
           <Select
@@ -262,16 +285,13 @@ export default class Index extends Component {
             <Select.Option value="mockjs">Mock.js</Select.Option>
             <Select.Option value="ts-mock">ts-mock</Select.Option>
           </Select>
-          {
-          (showTsMock || showMockjs) && (
+          {(showTsMock || showMockjs) && (
             <div className="replace-mode-actions">
-              {
-                showMockjs && (
-                  <Button size="small" disabled={ro} onClick={this.openMockjsTsModal}>
-                    从 TS 生成模板
-                  </Button>
-                )
-              }
+              {showMockjs && (
+                <Button size="small" disabled={ro} onClick={this.openMockjsTsModal}>
+                  从 TS 生成模板
+                </Button>
+              )}
               <Button
                 type="primary"
                 size="small"
@@ -281,15 +301,11 @@ export default class Index extends Component {
                 预览 Mock 结果
               </Button>
             </div>
-          )
-          }
+          )}
         </div>
         {
           showPlainJson && (
             <div>
-              <div className="replace-with">
-                Replace Response With:
-              </div>
               <MonacoEditor
                 index={this.props.index}
                 language="json"

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { buildRuleMatchUrlDisplay } from '../utils/mainHelpers'
 import { PREVIEW_UPDATE_EVENT } from '../utils/previewUpdate'
 
+/** 弱化预览：默认一行截断，悬停看全文；无匹配内容时不渲染 */
 export default function MatchUrlPreview ({ groupId, ruleIndex, settingsRevision }) {
   const [, setTick] = useState(0)
 
@@ -27,10 +28,11 @@ export default function MatchUrlPreview ({ groupId, ruleIndex, settingsRevision 
 
   return (
     <div
-      className="match-url-preview match-url-preview--in-header"
-      title="与实际拦截逻辑一致的匹配范围示意（非 DevTools Network 里看到的原始响应）"
+      className="match-url-preview match-url-preview--muted"
+      title={`匹配范围示意：${text}`}
     >
-      <div className="match-url-preview-body">{text}</div>
+      <span className="match-url-preview-tag">匹配</span>
+      <span className="match-url-preview-body">{text}</span>
     </div>
   )
 }

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>popup</title>
+	<meta charset="utf-8"/>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<style>
+		body {
+			width: 280px;
+			margin: 16px;
+			font-size: 14px;
+			line-height: 20px;
+			text-align: justify;
+		}
+		.lang-bar {
+			display: flex;
+			align-items: center;
+			justify-content: flex-end;
+			gap: 8px;
+			margin-bottom: 12px;
+			font-size: 12px;
+			color: #8c8c8c;
+			user-select: none;
+		}
+		.lang-label {
+			cursor: pointer;
+		}
+		.lang-label.active {
+			color: #1890ff;
+			font-weight: 600;
+		}
+		.lang-switch {
+			position: relative;
+			width: 36px;
+			height: 20px;
+			border-radius: 10px;
+			background: #d9d9d9;
+			border: none;
+			padding: 0;
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+		.lang-switch::after {
+			content: '';
+			position: absolute;
+			top: 2px;
+			left: 2px;
+			width: 16px;
+			height: 16px;
+			border-radius: 50%;
+			background: #fff;
+			box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+			transition: transform .2s;
+		}
+		.lang-switch.is-en {
+			background: #1890ff;
+		}
+		.lang-switch.is-en::after {
+			transform: translateX(16px);
+		}
+		.tip-msg strong.accent {
+			color: #1890ff;
+		}
+	</style>
+</head>
+<body>
+	<div class="lang-bar">
+		<span class="lang-label" data-lang="zh">中</span>
+		<button type="button" class="lang-switch" id="langSwitch" aria-label="Switch language"></button>
+		<span class="lang-label" data-lang="en">EN</span>
+	</div>
+	<div class="tip-msg" id="tipMsg"></div>
+	<script src="popupRestricted.js"></script>
+</body>
+</html>
